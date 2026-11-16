@@ -1,0 +1,5 @@
+.status-pill { display: inline-flex; align-items: center; max-width: 100%; padding: 3px 8px; border-radius: 5px; font-size: 12px; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; }
+.status-pill--neutral { background: #f5f1e9; color: #4c5b52; }
+.status-pill--info { background: #f5f1e9; color: #333c32; box-shadow: inset 3px 0 #333c32; }
+.status-pill--pending { background: var(--soft); color: var(--accent); }
+.status-pill--complete { background: var(--olive); color: #f1f5ee; }

@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import { chromium } from '../../.cache/browser-check/node_modules/playwright/index.mjs';
+const browser = await chromium.launch({ headless: true, executablePath: process.env.CRM_BROWSER_EXECUTABLE ?? fileURLToPath(new URL('../../.cache/playwright/chromium_headless_shell-1254/chrome-headless-shell-mac-arm64/chrome-headless-shell', import.meta.url)) });
+const context = await browser.newContext({ viewport: { width: 320, height: 640 }, reducedMotion: 'reduce' });
+const seed = { clients: [{ id: 'initial', name: 'Cliente inicial', phone: '100' }], orders: [], expenses: [], leads: [], payments: [], partsPurchases: [] };
+try {
+  const page = await context.newPage();
+  await page.addInitScript(data => {
+    localStorage.setItem('rodrigo-crm', JSON.stringify(data));
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) { if (window.failCrmWrites && key === 'rodrigo-crm') throw new Error('Simulated write failure'); return write.call(this, key, value); };
+  }, seed);
+  await page.goto(process.env.CRM_BASE_URL ?? 'http://127.0.0.1:5173/');
+  await page.getByRole('button', { name: 'Nueva reparación', exact: true }).click();
+  const repair = page.getByRole('dialog', { name: 'Nueva reparación' }), list = repair.getByRole('listbox', { name: 'Cliente' });
+  await repair.getByLabel('Equipo y modelo').fill('Equipo retenido'); await repair.getByLabel('Dirección o recepción').fill('Taller'); await repair.getByLabel('Falla informada').fill('Falla');
+  assert.equal(await list.evaluate(element => element.validity.valid), false, 'an empty selection must fail native constraint validation');
+  const before = await page.evaluate(() => localStorage.getItem('rodrigo-crm'));
+  await repair.getByRole('button', { name: 'Guardar', exact: true }).click();
+  assert.equal(await repair.isVisible(), true); assert.equal(await page.evaluate(() => localStorage.getItem('rodrigo-crm')), before);
+  await list.selectOption('initial');
+  await repair.getByRole('button', { name: 'Agregar cliente' }).click();
+  let client = page.getByRole('dialog', { name: 'Nuevo cliente' });
+  await client.getByLabel('Nombre', { exact: true }).fill('Cliente fallido'); await client.getByLabel('Teléfono', { exact: true }).fill('123');
+  await page.evaluate(() => { window.failCrmWrites = true; });
+  await client.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await client.getByRole('alert').waitFor();
+  assert.equal(await client.getByRole('alert').textContent(), 'No se guardó. Revisá los datos o el espacio disponible y volvé a intentar.');
+  assert.equal(await page.evaluate(() => localStorage.getItem('rodrigo-crm')), before);
+  assert.equal(await client.getByLabel('Nombre', { exact: true }).inputValue(), 'Cliente fallido');
+  await page.keyboard.press('Escape'); await client.waitFor({ state: 'hidden' });
+  assert.equal(await repair.getByLabel('Equipo y modelo').inputValue(), 'Equipo retenido'); assert.equal(await list.inputValue(), 'initial');
+  await page.evaluate(() => { window.failCrmWrites = false; });
+  await repair.getByRole('button', { name: 'Agregar cliente' }).click(); client = page.getByRole('dialog', { name: 'Nuevo cliente' });
+  await client.getByLabel('Nombre', { exact: true }).fill('Cliente pendiente'); await client.getByLabel('Teléfono', { exact: true }).fill('456');
+  await page.evaluate(() => new Promise(resolve => { navigator.locks.request('rodrigo-crm', async () => { resolve(); await new Promise(release => { window.releaseCrmLock = release; }); }); }));
+  await client.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await client.getByRole('button', { name: 'Guardando…' }).waitFor();
+  assert.equal(await client.getByRole('button', { name: 'Cerrar diálogo' }).isDisabled(), true);
+  await page.keyboard.press('Escape'); assert.equal(await client.isVisible(), true, 'Escape cannot abandon a pending creation');
+  assert.equal(await page.evaluate(() => localStorage.getItem('rodrigo-crm')), before);
+  await page.evaluate(() => window.releaseCrmLock()); await client.waitFor({ state: 'hidden' });
+  const id = await list.inputValue(), stored = await page.evaluate(() => JSON.parse(localStorage.getItem('rodrigo-crm')));
+  assert.notEqual(id, 'initial'); assert.equal(stored.clients.find(item => item.id === id)?.name, 'Cliente pendiente');
+  assert.equal(await repair.getByLabel('Equipo y modelo').inputValue(), 'Equipo retenido');
+  console.log('PASS: native required validation, failed writes, Escape, pending lock, draft and exact selection.');
+} finally { await context.close(); await browser.close(); }

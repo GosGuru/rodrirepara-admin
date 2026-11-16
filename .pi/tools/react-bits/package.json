@@ -1,0 +1,8 @@
+{
+  "name": "rodrigo-crm-react-bits-mcp",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "shadcn": "4.23.0"
+  }
+}

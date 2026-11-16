@@ -1,0 +1,16 @@
+.order-editor { display: grid; gap: 1rem; color: inherit; font: inherit; }
+.order-editor header h3, .order-editor header p { margin: 0 0 .45rem; }
+.order-editor fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 .75rem; }
+.order-editor legend { padding: 0 0 .75rem; font-weight: 700; color: var(--olive); }
+.order-editor__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.order-editor__field { min-width: 0; display: grid; gap: .35rem; align-content: start; }
+.order-editor__field label { font-weight: 600; }
+.order-editor__field input, .order-editor__field select, .order-editor__field textarea { box-sizing: border-box; width: 100%; min-height: 44px; padding: .6rem; border: 1px solid var(--line); border-radius: .5rem; background: #fff; color: inherit; font: inherit; }
+.order-editor__field small { line-height: 1.4; }
+.order-editor__actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.order-editor__actions button { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--soft); color: inherit; font: inherit; cursor: pointer; }
+.order-editor__actions button[type='submit'] { background: var(--olive); color: #fff; }
+.order-editor :is(input, select, textarea, button):focus-visible { outline: 3px solid var(--olive); outline-offset: 2px; }
+.order-editor :disabled { opacity: .65; cursor: not-allowed; }
+.order-editor__error { border-left: 3px solid var(--accent); padding: .5rem .75rem; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .order-editor *, .order-editor *::before, .order-editor *::after { animation: none; transition: none; } }

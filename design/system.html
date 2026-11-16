@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sistema actual — Rodrigo Repara</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+      color: #252e29;
+      background: #f5f1e9;
+      font-synthesis: none;
+      --line: #d9ded5;
+      --olive: #333c32;
+      --accent: #795018;
+      --soft: #f5e9d4;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1440px; margin: auto; padding: 32px clamp(20px, 3vw, 48px); }
+    header, section { margin-bottom: 24px; }
+    h1 { font-size: clamp(26px, 3vw, 38px); line-height: 1.12; letter-spacing: -.03em; margin: 8px 0; }
+    h2 { font-size: 20px; line-height: 1.2; margin: 0 0 16px; }
+    h3 { font-size: 16px; }
+    p { color: #4c5b52; }
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .swatch { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .color { height: 44px; border-bottom: 1px solid var(--line); }
+    .label { padding: 12px; }
+    code { overflow-wrap: anywhere; }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; min-height: 44px; padding: 9px 14px; background: #fff; border: 1px solid #abb9ac; border-radius: 8px; }
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: .65; cursor: wait; }
+    :focus-visible { outline: 3px solid #a65c00; outline-offset: 3px; }
+    .primary { background: #795018; color: white; border-color: #795018; }
+    .nav { display: grid; gap: 4px; background: var(--olive); border-radius: 12px; padding: 20px; }
+    .nav button { color: #f1f5ee; text-align: left; background: transparent; border: 0; }
+    .nav button[aria-current] { background: #5a6045; box-shadow: inset 3px 0 #e6b969; font-weight: 700; }
+    .nav button:hover { background: #465342; }
+    .nav button:focus-visible { outline-color: #f5d28c; }
+    .nav .group { color: #d6dfd2; font-size: 11px; margin: 12px 10px 4px; font-weight: 700; }
+    .nav svg { width: 20px; height: 20px; margin-right: 10px; vertical-align: middle; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+    .badge { display: inline-block; background: var(--soft); color: #62400f; padding: 3px 8px; border-radius: 5px; font-size: 12px; font-weight: 700; }
+    label { display: grid; gap: 4px; font-size: 14px; color: #35483e; }
+    input { min-height: 44px; padding: 9px 11px; border: 1px solid #9baea2; border-radius: 7px; width: 100%; background: #fff; }
+    .metric { display: block; font-size: 28px; line-height: 1.2; margin: 8px 0; }
+    .error { color: #8b1f16; }
+    .spacing { display: flex; flex-wrap: wrap; gap: 20px; align-items: end; }
+    .sample { width: 44px; background: var(--olive); border-radius: 5px; }
+    .radii { display: flex; flex-wrap: wrap; gap: 12px; }
+    .radius { border: 1px solid var(--line); background: #f5f1e9; padding: 18px; }
+    .source { font-size: 13px; }
+    .overview { display: grid; grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .stat { border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+    .stat:first-child { background: var(--olive); color: white; }
+    .stat:first-child span { color: #e0e9db; }
+    .stat strong { display: block; font-size: 28px; line-height: 1.2; margin-top: 8px; }
+    .stat span { font-size: 13px; }
+    .example-list { border: 1px solid #9baea2; border-radius: 8px; padding: 4px; box-shadow: 0 6px 16px #252e2926; }
+    .example-list div { padding: 10px; min-height: 44px; border-radius: 5px; }
+    .example-list div:first-child { background: var(--soft); font-weight: 700; }
+    .timeline { margin: 14px 0 0 7px; padding-left: 20px; border-left: 2px solid var(--line); }
+    .timeline li { padding-bottom: 18px; }
+    .inline-detail { padding: 1rem; border: 1px solid #d8d2c6; border-radius: .5rem; overflow-wrap: anywhere; }
+    .inline-detail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
+    .inline-detail dd { margin: 0; }
+    @media (max-width: 900px) { .overview { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) { .overview .stat:first-child { grid-column: 1 / -1; } }
+    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) { .two { grid-template-columns: 1fr; } .panel { padding: 17px; } main { padding: 22px 15px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Sistema actual · Rodrigo Repara</h1>
+      <p>Inventario de la interfaz existente: base, vistas y detalle inline. Ilustraciones estáticas, no DOM ni controles funcionales de producción.</p>
+    </header>
+    <section class="panel" aria-labelledby="palette">
+      <h2 id="palette">Paleta cálida</h2>
+      <div class="grid">
+        <div class="swatch"><div class="color" style="background:#333c32"></div><div class="label">Oliva lateral<br><code>#333c32</code></div></div>
+        <div class="swatch"><div class="color" style="background:#795018"></div><div class="label">Acento ámbar<br><code>#795018</code></div></div>
+        <div class="swatch"><div class="color" style="background:#f5f1e9"></div><div class="label">Fondo cálido<br><code>#f5f1e9</code></div></div>
+        <div class="swatch"><div class="color" style="background:#ffffff"></div><div class="label">Superficie<br><code>#ffffff</code></div></div>
+        <div class="swatch"><div class="color" style="background:#252e29"></div><div class="label">Texto principal<br><code>#252e29</code></div></div>
+        <div class="swatch"><div class="color" style="background:#4c5b52"></div><div class="label">Texto secundario<br><code>#4c5b52</code></div></div>
+        <div class="swatch"><div class="color" style="background:#f5e9d4"></div><div class="label">Fondo de badge<br><code>#f5e9d4</code></div></div>
+        <div class="swatch"><div class="color" style="background:#d9ded5"></div><div class="label">Línea<br><code>#d9ded5</code></div></div>
+      </div>
+    </section>
+    <div class="two">
+      <section class="panel" aria-labelledby="type">
+        <h2 id="type">Tipografía actual</h2>
+        <p><code>system-ui, -apple-system, sans-serif</code></p>
+        <h3>Título de tarjeta · 16 px</h3>
+        <p>Texto con acentos: reparación, diagnóstico, garantía y atención.</p>
+        <span class="source">Cifra KPI base · 28 px / 1.2</span>
+        <strong class="metric">$ 8.500</strong>
+        <p class="source">El tamaño base y algunos pesos dependen del navegador. No hay Poppins ni una fuente externa instalada.</p>
+      </section>
+      <section class="panel" aria-labelledby="navigation">
+        <h2 id="navigation">Navegación con iconos</h2>
+        <div class="nav" aria-label="Muestra de estados, no navegación de la app">
+          <span class="group">OPERACIÓN</span>
+          <button type="button" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Resumen</button>
+          <button type="button"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4z"/></svg>Consultas</button>
+        </div>
+        <p class="source">Muestra estática de colores, grupo e iconos; la aplicación usa Lucide y LineSidebar. Los botones no cambian la aplicación.</p>
+      </section>
+    </div>
+    <section class="panel" aria-labelledby="views">
+      <h2 id="views">Jerarquía y componentes de vistas</h2>
+      <p class="source">Muestra ilustrativa con datos de ejemplo; fuentes: <code>src/views/presentation.css</code>, <code>src/views/operations.css</code> y <code>src/components/order-detail.css</code>.</p>
+      <div class="overview">
+        <div class="stat"><span>Trabajos activos</span><strong>12</strong></div>
+        <div class="stat"><span>Cobrado hoy</span><strong>$ 8.500</strong></div>
+        <div class="stat"><span>Pendiente</span><strong>$ 12.000</strong></div>
+        <div class="stat"><span>Entregados</span><strong>3</strong></div>
+      </div>
+      <div class="actions"><button type="button">＋ Nueva reparación</button><button type="button">＋ Nuevo cliente</button><button type="button">＋ Registrar gasto</button></div>
+      <div class="two">
+        <div><h3>Modalidad · lista ilustrativa</h3><div class="example-list"><div>Todas ✓</div><div>Taller</div><div>Domicilio</div></div><p class="source">El control real admite teclado, ratón y tacto.</p></div>
+        <div><h3>Historial de reparaciones</h3><ul class="timeline"><li><strong>RR-1049</strong><br>Reparación · En taller</li><li><strong>RR-1030</strong><br>Reparación anterior</li></ul></div>
+      </div>
+      <div class="inline-detail"><h3>Detalle de orden · RR-1049</h3><dl><div><dt>Cliente</dt><dd>María González</dd></div><div><dt>Modalidad</dt><dd>Taller</dd></div><div><dt>Garantía</dt><dd>Orden original RR-1030</dd></div></dl><p class="source">Región inline ilustrativa; el detalle real conserva todos sus campos y cierre.</p></div>
+      <h3>Consultas · nombre destacado</h3><p><strong style="font-size:20px;line-height:1.2">María González</strong> · Diagnóstico de equipo</p>
+      <h3>Finanzas y repuestos</h3><p>Hoy · Semana · Mes: períodos agrupados. Repuestos: tabla de solo lectura.</p>
+    </section>
+    <section class="panel" aria-labelledby="controls">
+      <h2 id="controls">Controles y estados</h2>
+      <span class="badge">Esperando repuestos</span>
+      <div class="actions">
+        <button type="button" class="primary">Acción principal · muestra</button>
+        <button type="button">Acción secundaria · muestra</button>
+        <button type="button" disabled>Control deshabilitado</button>
+      </div>
+      <label>Campo de muestra<input placeholder="Probá el foco con Tab"></label>
+      <p class="error">Color de error · muestra visual</p>
+      <p class="source">Objetivo actual: mínimo 44 px por control; foco 3 px con separación de 3 px. Los ejemplos no guardan datos.</p>
+    </section>
+    <section class="panel" aria-labelledby="spacing">
+      <h2 id="spacing">Espaciados y radios observados</h2>
+      <div class="spacing">
+        <div><div class="sample" style="height:4px"></div>4 px</div>
+        <div><div class="sample" style="height:8px"></div>8 px</div>
+        <div><div class="sample" style="height:10px"></div>10 px</div>
+        <div><div class="sample" style="height:12px"></div>12 px</div>
+        <div><div class="sample" style="height:20px"></div>20 px</div>
+        <div><div class="sample" style="height:22px"></div>22 px</div>
+      </div>
+      <div class="radii">
+        <p class="radius" style="border-radius:5px">Badge · 5 px</p>
+        <p class="radius" style="border-radius:7px">Campo · 7 px</p>
+        <p class="radius" style="border-radius:8px">Botón · 8 px</p>
+        <p class="radius" style="border-radius:12px">Panel · 12 px</p>
+        <p class="radius" style="border-radius:14px">Diálogo · 14 px</p>
+      </div>
+      <p class="source">La base usa bordes y espacio; el desplegable y el indicador lateral sí tienen sombras específicas.</p>
+    </section>
+  </main>
+</body>
+</html>

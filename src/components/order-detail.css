@@ -1,0 +1,22 @@
+.inline-order-detail { min-width: 0; overflow-wrap: anywhere; }
+.inline-order-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.inline-order-heading h3 { margin: 0; }
+.inline-order-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.inline-order-actions button, .side-sheet__footer button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; }
+.inline-order-status { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 1.25rem; }
+.order-sheet-heading { overflow-wrap: anywhere; }
+.order-sheet-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--muted, #4c5b52); font-size: .875rem; }
+.order-sheet-topline button { min-width: 44px; min-height: 44px; display: grid; place-items: center; padding: 0; background: transparent; border: 0; }
+.order-sheet-heading h2 { font-size: 1.625rem; line-height: 1.2; margin: .5rem 0; }
+.order-sheet-client { display: flex; flex-wrap: wrap; gap: .75rem; margin: .75rem 0; }
+.order-sheet-client span { color: var(--muted, #4c5b52); }
+.inline-order-group { margin: 0 0 2rem; }
+.inline-order-group h3 { margin: 0 0 .75rem; font-size: 1.125rem; }
+.inline-order-group dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 0; }
+.inline-order-group dl > div { display: block; padding: 0; }
+.inline-order-group dt { color: var(--muted, #4c5b52); font-size: .875rem; }
+.inline-order-group dd { margin: .2rem 0 0; }
+.inline-order-fault { grid-column: 1 / -1; }
+.inline-order-fault dd { font-size: 1.25rem; line-height: 1.4; }
+.inline-order-group ul { padding-left: 1.3rem; }
+@media (max-width: 540px) { .inline-order-group dl { grid-template-columns: 1fr; } .inline-order-fault { grid-column: auto; } }

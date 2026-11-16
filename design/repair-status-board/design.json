@@ -1,0 +1,14 @@
+{
+  "title": "Rodrigo Repara · tablero y ficha lateral",
+  "feature": "odd/tasks/workshop-ui-redesign.md",
+  "brief": "Iteración de diseño por crítica explícita del usuario al Resumen: demasiado padding lateral, contenedores y bordes anidados, metadatos poco legibles, detalle sin jerarquía ni animación, editor naranja y acciones mal ubicadas. Pide «si es un Kanban, que sea un Kanban de verdad» y «quiero ver cambios rápido». Una dirección concreta para iterar: tablero abierto, tarjetas con equipo/cliente prioritarios, ficha lateral animada y edición blanca con pie fijo Cancelar/Guardar. Actualización del usuario: los números superiores SÍ van en cajitas con protagonismo y Ver detalles con gráficos. Los gráficos usan únicamente estados, cobros y saldos derivados de los datos ficticios de la muestra; sin tendencias ni ingresos inventados. Mantiene colores/familia del sistema e iconos en acciones. Prototipo solamente: drag y Mover, edición y cobros cambian datos ficticios en memoria de esta página; no toca React, JSON local ni registros del CRM. Reparación, cobro y entrega siguen independientes. Agrupación conocida y Otros estados opcional conservados; La dirección aprobada ya se implementó en la aplicación React: tablero y movimientos persistidos, gráficos de datos reales y ficha lateral. Este HTML sigue siendo una muestra en memoria; implementation.md separa referencia, código real, evidencia y límites.",
+  "artboards": [
+    {
+      "file": "01-colored-columns.html",
+      "title": "Kanban, indicadores y ficha lateral",
+      "tradeoff": "Tablero sin cajas anidadas; los cuatro indicadores sí usan tarjetas compactas con Ver detalles y gráficos derivados de la muestra. La ficha lateral concentra orden, edición y gráficos. En móvil ocupa la pantalla y el Kanban tiene scroll interno. Todo es simulación de diseño, no cambia el CRM.",
+      "width": 1440,
+      "height": 1200
+    }
+  ]
+}

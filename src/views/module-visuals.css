@@ -1,0 +1,35 @@
+/* Module-only hierarchy; palette follows the workshop board. */
+.mv-orders, .mv-clients, .mv-consultations, .mv-finance, .mv-parts, .mv-growth { min-width: 0; overflow-wrap: anywhere; }
+.mv-orders .table-wrap, .mv-finance .table-wrap, .mv-parts .table-wrap { max-width: 100%; overflow-x: auto; }
+.mv-orders td small { display: block; margin-top: 5px; color: #4c5b52; }
+.mv-client-header, .mv-consultation-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; flex-wrap: wrap; }
+.mv-client-header h3, .mv-consultation-heading h3 { margin: 0; font-size: 1.15rem; }
+.mv-client-header p, .mv-consultation-heading p { margin: 4px 0 0; color: #4c5b52; }
+.mv-count { color: #4c5b52; font-weight: 600; }
+.mv-clients .client { padding: 20px 0; border-bottom: 1px solid #d9ded5; }
+.mv-clients .clients-view__timeline { padding-left: 24px; }
+.mv-clients .clients-view__timeline li { padding: 12px 0; }
+.mv-signals { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 10px 0; font-size: 0.9rem; }
+.mv-consultations-list { display: grid; gap: 12px; margin: 24px 0; }
+.mv-consultation { background: #fff; border: 1px solid #d9ded5; border-radius: 12px; padding: 18px; }
+.mv-consultation dl { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 16px 0 0; }
+.mv-consultation .mv-problem { flex-basis: 100%; }
+.mv-consultation dt { color: #4c5b52; font-size: .85rem; }
+.mv-consultation dd { margin: 4px 0 0; }
+.mv-consultation .mv-problem dd { font-size: 1.1rem; font-weight: 600; }
+.mv-finance-periods { display: grid; gap: 16px; margin: 24px 0; }
+.mv-finance-period { border-bottom: 1px solid #d9ded5; padding-bottom: 16px; }
+.mv-finance-period h3 { margin: 0 0 12px; }
+.mv-finance-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 0; }
+.mv-finance-metric dt { color: #4c5b52; font-size: .85rem; }
+.mv-finance-metric dd { margin: 4px 0 0; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mv-pending { background: #f5e9d4; border-left: 4px solid #795018; padding: 16px; margin: 24px 0; }
+.mv-pending p { margin: 0; }
+.mv-pending p + p { margin-top: 6px; color: #4c5b52; }
+.mv-pending strong { font-size: 1.4rem; }
+.mv-parts td:nth-child(2), .mv-parts td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+.mv-growth-plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 24px 0; }
+.mv-growth-plan li { border-top: 3px solid #4c5b52; background: #fff; padding: 16px; }
+.mv-growth-plan p { margin-bottom: 0; }
+.mv-growth-decision { background: #f5e9d4; border-left: 4px solid #795018; padding: 16px; }
+.mv-growth-decision p { margin: 0; }

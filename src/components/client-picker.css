@@ -1,0 +1,10 @@
+.client-picker { display: grid; gap: 6px; min-width: 0; }
+.client-picker__toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
+.client-picker__search { flex: 1 1 190px; min-width: 0; }
+.client-picker__search span { display: block; position: relative; }
+.client-picker__search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #4c5b52; pointer-events: none; }
+.client-picker__search input { padding-left: 38px; }
+.client-picker__toolbar button { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; }
+.client-picker select { min-height: 112px; padding: 4px; }
+.client-picker option { padding: 7px 8px; border-radius: 4px; }
+.client-picker__selection, .client-picker [role="status"] { margin: 0; font-size: 13px; color: #35483e; overflow-wrap: anywhere; }

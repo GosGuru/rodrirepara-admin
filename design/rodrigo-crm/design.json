@@ -1,0 +1,28 @@
+{
+  "title": "Rodrigo Repara · propuestas de gestión",
+  "feature": "odd/tasks/operational-crm-board.md",
+  "brief": "Tres propuestas visuales de alcance integral para taller y domicilio, con datos ficticios y sin facturación fiscal. La elección A/B/C permanece pendiente.",
+  "artboards": [
+    {
+      "file": "01-service-desk.html",
+      "title": "Centro de mando diario",
+      "tradeoff": "Equilibra atención diaria y accesos; la lista completa queda más abajo.",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "file": "02-workshop-board.html",
+      "title": "Tablero operativo",
+      "tradeoff": "Presenta la cola como tablero; dedica más espacio al seguimiento operativo.",
+      "width": 1440,
+      "height": 1100
+    },
+    {
+      "file": "03-business-pulse.html",
+      "title": "Mesa comercial y financiera",
+      "tradeoff": "Usa navegación horizontal y una mesa compacta; requiere desplazarse hacia el detalle financiero.",
+      "width": 1440,
+      "height": 1100
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "chosen": "02-workshop-board.html",
+  "handoffs": {
+    "02-workshop-board.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-13T02:17:45.260Z",
+      "startedAt": "2026-11-13T18:41:54.165Z",
+      "implementedAt": "2026-11-14T04:37:37.811Z",
+      "note": "Flujo del taller implementado y verificado de forma independiente (S1–S5): edición de 16 campos, reparación/entrega independientes, señas y parciales, garantías, historial real, persistencia y coordinación entre pestañas. Documentación actualizada; preview HTTP 200. Conserva JSON local, sin Supabase ni cambios de tipografía/sidebar. No implica aprobación nativa ni publicación.",
+      "previewUrl": "http://127.0.0.1:5173/"
+    }
+  }
+}

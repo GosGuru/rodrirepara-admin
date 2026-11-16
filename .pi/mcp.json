@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "react-bits": {
+      "command": "node",
+      "args": ["./node_modules/shadcn/dist/index.js", "mcp"],
+      "cwd": ".pi/tools/react-bits",
+      "description": "Consultar el registro oficial de componentes React Bits sin instalar componentes.",
+      "exposure": "hidden",
+      "toolExposure": {
+        "get_project_registries": "deferred",
+        "list_items_in_registries": "deferred",
+        "search_items_in_registries": "deferred",
+        "view_items_in_registries": "deferred",
+        "get_item_examples_from_registries": "deferred"
+      }
+    }
+  }
+}

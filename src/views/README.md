@@ -1,0 +1,21 @@
+# View seams
+
+`App` owns data loading, selectors, filters, dialogs and saves. Each component receives data and callbacks. Views do not create repositories or optimistically replace whole Data; persistence stays behind the existing root actions.
+
+- `OverviewView({ data: Data, stats: { collected: number, active: number, pending: number, leads: number }, onViewOrders: () => void, onCreateRepair: () => void, onCreateClient: () => void, onCreateExpense: () => void })`
+- `OrdersView({ data: Data, filtered: Order[], query: string, mode: string, onQueryChange: (value: string) => void, onModeChange: (value: string) => void })`
+- `ClientsView({ data: Data, onCreateClient: () => void })`
+- `ConsultationsView({ data: Data, leads: number })`
+- `FinanceView({ data: Data, pending: number, onCreateExpense: () => void })`
+- `PartsView({ data: Data })`
+- `GrowthView()` — proposed stages and the existing unresolved user decision; no progress or permission model.
+
+Import named exports from each corresponding `./...View` file. Data and Order types come from `../repository`. The existing repair creation action does not preselect a client.
+
+OverviewView, OrdersView and ClientsView also accept optional `actions?: WorkshopActions` from `../components/workshop/actions`; existing read-only callers omit it. `InlineOrder({ order, data, actions? })` belongs inside a card/list item; `InlineOrderRow({ order, data, cells, actions? })` returns valid table markup and opens the shared portal sheet rather than inserting an expanded detail row. `App` wraps the real view subtree in `OrderSheetProvider({data, actions?, children})`, retaining a single host across view/filter/card changes. Standalone callers keep a local-provider fallback. The anchor and displayed original remain distinct; the displayed ID resolves from current data. The optional actions expose sheet editing and payment with live docked form submission, with actual read-only payment history, success/error notices and focus handling documented in `../components/workshop/integration.md`. Other view props and selector logic are unchanged.
+
+Overview owns the open Kanban in `repair-board.ts`, actual-data chart inputs under `overview-board/`, and scoped `overview-board.css`. Movement uses only `actions.updateOrder(id, {repair: chosenState})`; pending destinations require an exact choice and cancel/same-column movement never write. It does not persist ranking, dates, payment or delivery. Stage headers default to amber, blue and green; board cards share a neutral white base and unknown states retain a neutral header fallback. The settings button near Reparaciones offers named presets independently for each stage. Preferences are validated and stored only in this browser under a key separate from CRM data; unavailable storage leaves a visible warning and the choice remains temporary. This does not sync between devices. Card identifiers remain internal to actions and accessible associations, not visible card content. Cards put the client first, with equipment and modality beneath, and distinguish status tags using semantic colors and text. A subtle shadow strengthens on hover, press or focus; reduced-motion preferences disable its transition. Payment and delivery remain in separate columns, and centered detail and move controls stay together. Long content may wrap without hiding fields. The existing quick actions sit above the indicators in a sticky bar, with a two-column layout on narrow screens so all four remain visible and keyboard reachable. The move sheet keeps exact-state radios compact and labels clickable, and distinguishes an idle disabled save from a busy save.
+
+ClientsView displays all clients initially and filters locally by name or phone, ignoring case and accents. Its adjacent `Nuevo cliente` action reuses the existing creation dialog; searching does not change stored records or order histories.
+
+Shared `StatusPill` is presentation-only and preserves unknown labels. Other modules use scoped `module-visuals.css`, retaining the existing `operations.css`/`presentation.css` foundations. Sheet/detail and form styling live under `../components/`; global `App`, sidebar and shared primitives remain parent-owned surfaces.

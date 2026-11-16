@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "chosen": "01-colored-columns.html",
+  "handoffs": {
+    "01-colored-columns.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-14T13:59:03.886Z",
+      "startedAt": "2026-11-14T13:59:03.916Z",
+      "implementedAt": "2026-11-15T02:44:18.732Z",
+      "feature": "odd/tasks/workshop-ui-redesign.md",
+      "note": "Dirección implementada en React: Kanban abierto, gráficos reales, ficha lateral y edición blanca con acciones fijas. Evidencia combinada en odd/verification/workshop-ui-redesign.md; comprobaciones móviles restantes completadas, con picker nativo asistido por teclado. Sin aprobación nativa ni publicación. Inventario actual en implementation.md; system.md/html son capturas anteriores, no resincronizadas sin OK.",
+      "previewUrl": "http://127.0.0.1:5173/"
+    }
+  }
+}

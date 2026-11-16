@@ -1,0 +1,63 @@
+/* Presentation-only view styling; shared controls and primitives remain unchanged. */
+.overview-stats { grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr)); }
+.overview-stats .stat { min-width: 0; }
+.overview-stats .stat span { display: flex; align-items: center; gap: 8px; }
+.overview-stats .overview-primary { background: var(--olive); border-color: var(--olive); color: white; }
+.overview-stats .overview-primary span { color: #e0e9db; }
+.overview-stats svg, .overview-actions svg, .finance-view button svg, .parts-view h2 svg { width: 18px; height: 18px; flex: none; vertical-align: middle; }
+.overview-actions .actions button, .finance-view .heading button { display: inline-flex; align-items: center; gap: 8px; }
+.overview-queue .task { min-width: 0; overflow-wrap: anywhere; }
+.overview-actions .actions button { min-width: 0; }
+
+/* Repair-board signals reuse the existing amber, neutral and olive palette. */
+.repair-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.repair-column { --repair-signal: #4c5b52; --repair-surface: #f5f1e9; min-width: 0; border: 1px solid var(--line); border-top: 4px solid var(--repair-signal); border-radius: 8px; overflow-wrap: anywhere; }
+.repair-column--pending { --repair-signal: var(--accent); --repair-surface: var(--soft); }
+.repair-column--ready { --repair-signal: var(--olive); --repair-surface: #fff; }
+.repair-column--other { grid-column: 1 / -1; }
+/* Give the existing inline forms room without introducing a modal or portal. */
+.repair-board:has(.inline-order-detail) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.repair-board .repair-column:has(.inline-order-detail) { grid-column: 1 / -1; }
+.repair-column__heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px; border-radius: 4px 4px 0 0; background: var(--repair-surface); }
+.repair-column__heading h3 { margin: 0; font-size: 16px; color: var(--repair-signal); }
+.repair-column__count { flex: none; padding: 2px 8px; border-radius: 5px; background: #fff; color: #252e29; font-size: 13px; }
+.repair-column__cards { display: grid; gap: 10px; padding: 10px; }
+.repair-column__empty { margin: 4px; padding: 18px 6px; font-size: 14px; }
+.overview-queue .repair-card { min-width: 0; padding: 15px; background: #fff; border: 1px solid var(--line); }
+.repair-card > small { color: #4c5b52; }
+.repair-state { justify-self: start; padding: 3px 7px; border-radius: 5px; background: var(--repair-surface); color: var(--repair-signal); font-size: 12px; font-weight: 700; }
+.repair-column--ready .repair-state { background: var(--olive); color: #f1f5ee; }
+.repair-signals { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0; font-size: 12px; color: #4c5b52; }
+.repair-signals strong { color: var(--accent); }
+.repair-signals .repair-signal--complete { color: var(--olive); }
+.repair-board .inline-order-detail { min-width: 0; max-width: 100%; padding: 12px; }
+.repair-board .inline-order-heading, .repair-board .inline-order-actions { flex-wrap: wrap; }
+.repair-board .inline-order-detail dl div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.repair-board :is(input, select, textarea) { min-width: 0; }
+.repair-board button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 1200px) {
+  .repair-board, .repair-board:has(.inline-order-detail) { grid-template-columns: minmax(0, 1fr); }
+}
+
+.consultations-list { display: grid; gap: 12px; margin: 20px 0; }
+.consultation { border: 1px solid var(--line); border-radius: 8px; padding: 18px; overflow-wrap: anywhere; }
+.consultation-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.consultation-heading h3 { margin: 0; font-size: 20px; line-height: 1.2; }
+.consultation-heading p { margin: 4px 0 0; }
+.consultation dl { margin: 16px 0 0; }
+.consultation dl div { grid-template-columns: 90px minmax(0, 1fr); gap: 8px; }
+.finance-periods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 20px 0; }
+.finance-periods .finance-period { margin: 0; padding: 16px; border: 1px solid var(--line); border-radius: 8px; line-height: 1.7; overflow-wrap: anywhere; }
+.finance-period strong { display: block; color: var(--olive); }
+.finance-view .finance-pending { margin: 18px 0; }
+.finance-view h3 { margin: 28px 0 12px; }
+.parts-view h2 { display: flex; align-items: center; gap: 9px; }
+.parts-view .table-wrap { margin-top: 20px; }
+@media (max-width: 900px) {
+  .overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finance-periods { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .overview-stats .overview-primary { grid-column: 1 / -1; }
+  .consultation dl div { grid-template-columns: 1fr; gap: 2px; }
+}
