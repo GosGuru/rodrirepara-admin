@@ -2,17 +2,17 @@ import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OverviewView } from "./OverviewView";
 import type { Data, Order } from "../repository";
-import seed from "../seed.json";
+import { sampleSeedData as seed } from "../test-fixtures";
 
-test("resumen prioriza trabajos activos y conserva indicadores y acciones", () => {
+test("resumen prioriza trabajos activos y conserva indicadores, gráficos y controles de vista", () => {
   const data: Data = { clients: [], orders: [], leads: [], payments: [], expenses: [], partsPurchases: [] };
   const noop = () => {};
   const html = renderToStaticMarkup(<OverviewView data={data} stats={{ active: 3, collected: 0, pending: 0, leads: 2 }} onViewOrders={noop} onCreateRepair={noop} onCreateClient={noop} onCreateExpense={noop} />);
-  expect(html).toContain('Ver detalles');
-  expect(html).not.toContain('class="panel overview-queue"');
   expect(html).toContain('aria-label="Indicadores"');
   expect(html.indexOf('Trabajos activos')).toBeLessThan(html.indexOf('Cobrado hoy'));
-  for (const label of ['Trabajos activos', 'Cobrado hoy', 'Por cobrar', 'Consultas nuevas', 'Nueva reparación', 'Nuevo cliente', 'Registrar gasto', 'Ver trabajos', 'Ver todos']) expect(html).toContain(label);
+  for (const label of ['Trabajos activos', 'Cobrado hoy', 'Por cobrar', 'Consultas nuevas', 'Ingresos del mes', 'Reparaciones por estado', 'Reparaciones', 'Tablero', 'Lista']) {
+    expect(html).toContain(label);
+  }
   expect(html).toContain('>3</strong>');
   expect(html).toContain('>2</strong>');
   expect(html).toContain('aria-hidden="true"');
@@ -38,11 +38,10 @@ function column(html: string, label: string) {
 test('tarjetas muestran contexto y controles sin identificadores visibles', () => {
   const html = board([order('RR-1047', 'Esperando aprobación', { equipment: 'Samsung' })]);
   expect(html).not.toContain('>RR-1047<');
-  expect(html).toContain('aria-label="Mover RR-1047"');
+  expect(html).toContain('aria-label="Mover o cambiar estado de RR-1047"');
   expect(html).toContain('Ver detalle');
-  expect(html).toContain('ob-card-context');
-  expect(html).toContain('ob-card-states');
-  expect(html).toContain('aria-label="Ajustar colores del tablero"');
+  expect(html).toContain('Contactar');
+  expect(html).toContain('ob-card-meta-row');
 });
 
 test('tablero sin acciones conserva el aviso de solo lectura sin instrucción de arrastre', () => {
@@ -51,7 +50,7 @@ test('tablero sin acciones conserva el aviso de solo lectura sin instrucción de
   expect(html).not.toContain('Arrastrá desde el asa o usá «Mover».');
 });
 
-test('tablero agrupa etiquetas exactas y conserva cobro y entrega independientes', () => {
+test('tablero agrupa etiquetas exactas y muestra acciones específicas por columna', () => {
   const html = board([
     order('B-1', 'Visita o recepción', { price: 0, paid: 0, delivery: 'Entregado' }),
     order('B-2', 'Esperando aprobación'), order('B-3', 'Esperando repuestos'),
@@ -66,10 +65,10 @@ test('tablero agrupa etiquetas exactas y conserva cobro y entrega independientes
   expect(pending).toContain('3 trabajos');
   expect(progress).toContain('2 trabajos');
   expect(ready).toContain('1 trabajo');
-  expect(ready).toContain('Cobro:'); expect(ready).toContain('Pendiente');
-  expect(html).toContain('draggable="true"');
-  expect(html).toContain('Mover B-6');
-  expect(progress).toContain('Cobrado'); expect(progress).toContain('Entregado');
+  expect(pending).toContain('Contactar');
+  expect(progress).toContain('Actualizar estado');
+  expect(ready).toContain('Cobrar y entregar');
+  expect(html).toContain('Mover o cambiar estado de B-6');
   expect(html).not.toContain('aria-label="Otros estados"');
 });
 
@@ -98,4 +97,39 @@ test('tablero vacío conserva tres columnas y mensajes útiles sin inventar otro
   expect(column(html, 'Listos')).toContain('No hay trabajos listos.');
   expect(html.match(/aria-label="0 trabajos"/g)?.length).toBe(3);
   expect(html).not.toContain('aria-label="Otros estados"');
+});
+
+test('tarjetas completas son arrastrables solo cuando hay acciones habilitadas', () => {
+  const data = { ...structuredClone(seed), orders: [order('DRAG-1', 'Esperando repuestos')] } as Data;
+  const noop = () => {};
+  const actions = { updateOrder: async () => {}, registerPayment: async () => {} };
+
+  const interactive = renderToStaticMarkup(
+    <OverviewView data={data} actions={actions} stats={{ active: 1, collected: 0, pending: 0, leads: 0 }} onViewOrders={noop} onCreateRepair={noop} />,
+  );
+  expect(interactive).toContain('class="ob-card ob-card--draggable"');
+  expect(interactive).toContain('<article class="ob-card ob-card--draggable" draggable="true"');
+
+  const readonly = renderToStaticMarkup(
+    <OverviewView data={data} stats={{ active: 1, collected: 0, pending: 0, leads: 0 }} onViewOrders={noop} onCreateRepair={noop} />,
+  );
+  expect(readonly).not.toContain('ob-card--draggable');
+  expect(readonly).not.toContain('<article class="ob-card" draggable="true"');
+});
+
+test('aplica colores personalizados HEX del Kanban mediante variables CSS accesibles', () => {
+  const data = { ...structuredClone(seed), orders: [] } as Data;
+  const noop = () => {};
+  const html = renderToStaticMarkup(
+    <OverviewView
+      data={data}
+      stats={{ active: 0, collected: 0, pending: 0, leads: 0 }}
+      colors={{ pending: '#7C3AED', progress: '#0D9488', ready: '#DC2626' }}
+      onViewOrders={noop}
+      onCreateRepair={noop}
+    />,
+  );
+  expect(html).toContain('--ob-hdr-bg:#F2ECFE');
+  expect(html).toContain('--ob-hdr-bg:#E6F7F5');
+  expect(html).toContain('--ob-hdr-bg:#FEEEEE');
 });

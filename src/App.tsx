@@ -8,10 +8,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { X } from "lucide-react";
+import { X, UserPlus, Receipt } from "lucide-react";
 import "./create-dialog.css";
+import "./components/auth-gate.css";
 import type { CRMRepository, Data } from "./repository";
-import { ClientForm, ExpenseForm, RepairForm } from "./components/QuickActionForms";
+import { ClientForm, ExpenseForm } from "./components/QuickActionForms";
+import { Toast } from "./components/ui/Toast";
 import { dashboard, filterOrders } from "./selectors";
 import { Header } from "./Header";
 import { Sidebar } from "./components/Sidebar";
@@ -22,8 +24,11 @@ import { ConsultationsView } from "./views/ConsultationsView";
 import { FinanceView } from "./views/FinanceView";
 import { PartsView } from "./views/PartsView";
 import { GrowthView } from "./views/GrowthView";
+import { NewRepairView } from "./views/NewRepairView";
 import { OrderSheetProvider } from "./components/OrderSheetProvider";
+import { SettingsDrawer } from "./components/settings/SettingsDrawer";
 import { createWorkshopActions } from "./components/workshop/actions";
+import { readColors, saveColors, type StageColors } from "./views/kanban-color-settings";
 
 const viewSubtitles: Record<string, string> = {
   Consultas: 'Identificá cada consulta y su estado de respuesta.',
@@ -47,104 +52,239 @@ export function Provider({
 
 function Dialog({
   title,
+  subtitle,
+  icon,
+  iconTone = 'lavender',
   onClose,
   children,
   busy = false,
-  nested = false,
 }: {
   title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+  iconTone?: 'blue' | 'lavender' | 'amber';
   onClose: () => void;
   children: ReactNode;
   busy?: boolean;
-  nested?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement;
+    const previous = document.activeElement as HTMLElement | null;
     const dialog = ref.current!;
     dialog.showModal();
     return () => {
-      dialog.close();
+      if (dialog.open) dialog.close();
       previous?.focus();
     };
   }, []);
   return (
     <dialog
       ref={ref}
-      className={`create-dialog${nested ? ' create-dialog--nested' : ''}`}
+      className="create-dialog"
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         if (!busy) onClose();
       }}
+      onClick={(e) => {
+        if (e.target === ref.current && !busy) onClose();
+      }}
     >
-      <div className="heading">
-        <h2 id={titleId}>{title}</h2>
-        <button onClick={onClose} disabled={busy} aria-label="Cerrar diálogo">
-          <X size={20} aria-hidden="true" />
+      <div className="create-dialog__header">
+        <div className="create-dialog__title-wrap">
+          {icon && (
+            <div className={`create-card__icon create-card__icon--${iconTone}`} aria-hidden="true">
+              {icon}
+            </div>
+          )}
+          <div className="create-dialog__title-copy">
+            <h2 id={titleId}>{title}</h2>
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="create-dialog__close"
+          onClick={onClose}
+          disabled={busy}
+          aria-label="Cerrar diálogo"
+        >
+          <X size={18} aria-hidden="true" />
         </button>
       </div>
       {children}
     </dialog>
   );
 }
-export default function App() {
+
+export default function App({
+  userEmail,
+  onSignOut,
+}: {
+  userEmail?: string;
+  onSignOut?: () => Promise<void> | void;
+} = {}) {
   const repo = useContext(Context)!;
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
+  const [reloadTick, setReloadTick] = useState(0);
   const [view, setView] = useState("Resumen");
-  const [dialog, setDialog] = useState("");
-  const [nestedClient, setNestedClient] = useState(false);
-  const [clientBusy, setClientBusy] = useState(false);
-  const [selectedClient, setSelectedClient] = useState('');
+  const [returnView, setReturnView] = useState("Resumen");
+  const [dialog, setDialog] = useState<"" | "cliente" | "gasto">("");
+  const [dialogBusy, setDialogBusy] = useState(false);
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState("Todas");
   const [notice, setNotice] = useState("");
-  const noticeRef = useRef<HTMLParagraphElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [boardColors, setBoardColors] = useState(readColors);
+  const [colorError, setColorError] = useState(false);
+  const noticeRef = useRef<HTMLDivElement>(null);
+
+  async function persistBoardColors(next: StageColors): Promise<void> {
+    const saved = saveColors(next);
+    if (!saved) {
+      setColorError(true);
+      throw new Error("No se pudieron guardar los colores del tablero.");
+    }
+    setBoardColors(next);
+    setColorError(false);
+  }
+
+  function openNewRepair() {
+    if (view !== "Nueva reparación") {
+      setReturnView(view);
+    }
+    setDialog("");
+    setView("Nueva reparación");
+  }
+
   const actions = useMemo(() => createWorkshopActions(repo, setData, text => {
     setNotice(text);
     if (text) requestAnimationFrame(() => { if (!document.activeElement || document.activeElement === document.body) noticeRef.current?.focus(); });
   }), [repo]);
+
   useEffect(() => {
+    let active = true;
+    setError("");
     Promise.resolve()
       .then(() => repo.load())
-      .then(setData)
-      .catch(() =>
-        setError(
-          "No se pudieron leer los datos locales. Revisá el almacenamiento del navegador; no se modificaron.",
-        ),
-      );
-  }, [repo]);
+      .then((loaded) => {
+        if (active) setData(loaded);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        const message = err instanceof Error && err.message.trim().length > 0
+          ? err.message
+          : "No se pudieron cargar los datos. Revisá la conexión y volvé a intentar.";
+        setError(message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [repo, reloadTick]);
+
   if (error)
     return (
-      <main>
-        <h1>No se pudo abrir el tablero</h1>
-        <p role="alert">{error}</p>
-        <p>Los datos guardados no se modificaron.</p>
+      <main className="auth-shell">
+        <section className="auth-card">
+          <h1>No se pudo abrir el tablero</h1>
+          <p role="alert" className="auth-error">{error}</p>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button
+              type="button"
+              className="auth-submit"
+              style={{ flex: 1, marginTop: 0 }}
+              onClick={() => setReloadTick((n) => n + 1)}
+            >
+              Reintentar
+            </button>
+            {onSignOut && (
+              <button
+                type="button"
+                className="cfg-cancel-btn"
+                onClick={() => void onSignOut()}
+              >
+                Cerrar sesión
+              </button>
+            )}
+          </div>
+        </section>
       </main>
     );
-  if (!data) return <main aria-live="polite">Cargando datos locales…</main>;
+  if (!data) return <main className="auth-shell" aria-live="polite"><div className="auth-loading">Cargando datos…</div></main>;
+
   const d = data;
   const stats = dashboard(d);
   const filtered = filterOrders(d, query, mode);
-  function saved(next: Data) {
-    setData(next);
-    setDialog("");
-    setNotice("Guardado en este navegador.");
-  }
+  const isNewRepair = view === "Nueva reparación";
+
   return (
     <div className="shell">
-      <Sidebar view={view} setView={setView} />
+      <Sidebar view={view} setView={setView} onOpenSettings={() => setSettingsOpen(true)} />
       <OrderSheetProvider data={d} actions={actions}>
-      <main className={view === 'Resumen' ? 'overview-main' : undefined}>
-        <Header view={view} title={view === 'Resumen' ? 'Tablero de trabajo' : undefined} subtitle={view === 'Resumen' ? '' : viewSubtitles[view]} />
-        {notice && (
-          <p role="status" className="note" tabIndex={-1} ref={noticeRef}>
-            {notice}
-          </p>
+      <main
+        className={
+          view === 'Resumen'
+            ? 'overview-main'
+            : isNewRepair
+              ? 'create-view-main'
+              : undefined
+        }
+      >
+        {!isNewRepair && (
+          <Header
+            view={view}
+            dashboardChrome={view === 'Resumen'}
+            data={d}
+            onCreateRepair={openNewRepair}
+            onCreateExpense={() => setDialog("gasto")}
+            onQuickSearch={(q) => { setQuery(q); setView("Órdenes de trabajo"); }}
+            onOpenClients={() => setView("Clientes e historial")}
+            title={view === 'Resumen' ? undefined : view}
+            subtitle={view === 'Resumen' ? '' : viewSubtitles[view]}
+          />
         )}
-        {view === "Resumen" && <OverviewView actions={actions} data={d} stats={stats} onViewOrders={() => setView("Órdenes de trabajo")} onCreateRepair={() => { setSelectedClient(''); setDialog("reparación"); }} onCreateClient={() => setDialog("cliente")} onCreateExpense={() => setDialog("gasto")} />}
+        <Toast
+          message={notice}
+          onDismiss={() => setNotice("")}
+          statusRef={noticeRef}
+        />
+        {view === "Resumen" && (
+          <OverviewView
+            actions={actions}
+            data={d}
+            stats={stats}
+            colors={boardColors}
+            colorError={colorError}
+            onViewOrders={() => setView("Órdenes de trabajo")}
+            onOpenConsultations={() => setView("Consultas")}
+            onOpenFinance={() => setView("Finanzas")}
+            onCreateRepair={openNewRepair}
+            onCreateClient={() => setDialog("cliente")}
+            onCreateExpense={() => setDialog("gasto")}
+          />
+        )}
+        {isNewRepair && (
+          <NewRepairView
+            clients={d.clients}
+            onBack={() => setView(returnView)}
+            onCreateClient={async (input) => {
+              const result = await repo.addClientWithId(input);
+              setData(result.data);
+              return result.clientId;
+            }}
+            onSaveRepair={async (input) => {
+              const next = await repo.addOrder(input);
+              setData(next);
+            }}
+            onClientCreated={() => setNotice("Cliente creado correctamente.")}
+            onRepairSaved={() => {
+              setView(returnView);
+              setNotice("Reparación registrada correctamente.");
+            }}
+          />
+        )}
         {view === "Órdenes de trabajo" && <OrdersView actions={actions} data={d} filtered={filtered} query={query} mode={mode} onQueryChange={setQuery} onModeChange={setMode} />}
         {view === "Clientes e historial" && <ClientsView actions={actions} data={d} onCreateClient={() => setDialog("cliente")} />}
         {view === "Consultas" && <ConsultationsView data={d} leads={stats.leads} />}
@@ -153,22 +293,65 @@ export default function App() {
         {view === "Crecimiento" && <GrowthView />}
       </main>
       </OrderSheetProvider>
-      {dialog && (
+      <SettingsDrawer
+        open={settingsOpen}
+        colors={boardColors}
+        userEmail={userEmail}
+        onSignOut={onSignOut}
+        onSaveColors={persistBoardColors}
+        onColorsSaved={() => setNotice("Colores del tablero guardados.")}
+        onOpenModule={(moduleView) => setView(moduleView)}
+        onCreateClient={() => setDialog("cliente")}
+        onCreateExpense={() => setDialog("gasto")}
+        onCreateRepair={openNewRepair}
+        onClose={() => setSettingsOpen(false)}
+      />
+      {dialog === "cliente" && (
         <Dialog
-          title={dialog === "reparación" ? "Nueva reparación" : dialog === "cliente" ? "Nuevo cliente" : "Registrar gasto"}
+          title="Nuevo cliente"
+          subtitle="Agregar un cliente a tu base"
+          icon={<UserPlus size={20} strokeWidth={2} />}
+          iconTone="lavender"
+          busy={dialogBusy}
           onClose={() => setDialog("")}
         >
-          {dialog === 'cliente' ? <ClientForm onSave={async input => saved(await repo.addClient(input))} />
-            : dialog === 'gasto' ? <ExpenseForm onSave={async input => saved(await repo.addExpense(input))} />
-            : <RepairForm clients={d.clients} clientId={selectedClient} onClientChange={setSelectedClient} onAddClient={() => setNestedClient(true)} onSave={async input => saved(await repo.addOrder(input))} />}
+          <ClientForm
+            onBusyChange={setDialogBusy}
+            onCancel={() => setDialog("")}
+            onSave={async (input) => {
+              const next = await repo.addClient(input);
+              setData(next);
+            }}
+            onConfirmed={() => {
+              setDialog("");
+              setNotice("Cliente creado correctamente.");
+            }}
+          />
         </Dialog>
       )}
-      {dialog === 'reparación' && nestedClient && <Dialog title="Nuevo cliente" nested busy={clientBusy} onClose={() => setNestedClient(false)}>
-        <ClientForm onBusyChange={setClientBusy} onSave={async input => {
-          const result = await repo.addClientWithId(input);
-          setData(result.data); setSelectedClient(result.clientId); setNestedClient(false);
-        }} />
-      </Dialog>}
+      {dialog === "gasto" && (
+        <Dialog
+          title="Registrar gasto"
+          subtitle="Cargar un gasto operativo del taller"
+          icon={<Receipt size={20} strokeWidth={2} />}
+          iconTone="amber"
+          busy={dialogBusy}
+          onClose={() => setDialog("")}
+        >
+          <ExpenseForm
+            onBusyChange={setDialogBusy}
+            onCancel={() => setDialog("")}
+            onSave={async (input) => {
+              const next = await repo.addExpense(input);
+              setData(next);
+            }}
+            onConfirmed={() => {
+              setDialog("");
+              setNotice("Cambios guardados correctamente.");
+            }}
+          />
+        </Dialog>
+      )}
     </div>
   );
 }

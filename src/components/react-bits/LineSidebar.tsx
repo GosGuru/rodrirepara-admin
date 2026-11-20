@@ -2,8 +2,8 @@
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import './LineSidebar.css';
 
-type Item = { label: string; icon: ReactNode; group?: string };
-type Props = { items: Item[]; active: string; onItemClick: (label: string) => void };
+type Item = { label: string; value?: string; icon: ReactNode; group?: string; separated?: boolean };
+type Props = { items: Item[]; active: string; onItemClick: (value: string) => void };
 
 // Upstream's smooth falloff and frame-rate independent exponential smoothing,
 // adapted to run only during fine-pointer interaction and never on selection.
@@ -80,12 +80,15 @@ export default function LineSidebar({ items, active, onItemClick }: Props) {
   };
   return <nav className="line-sidebar" aria-label="Navegación principal">
     <ul ref={listRef} className="line-sidebar__list" onPointerMove={move} onPointerLeave={leave}>
-      {items.map((item, index) => <li key={item.label} ref={el => { itemRefs.current[index] = el; }} className="line-sidebar__item">
-        {item.group && <div className="line-sidebar__group">{item.group}</div>}
-        <button type="button" className="line-sidebar__button" aria-current={active === item.label ? 'page' : undefined} onClick={() => onItemClick(item.label)}>
-          <span className="line-sidebar__label">{item.icon}<span className="line-sidebar__text">{item.label}</span></span>
-        </button>
-      </li>)}
+      {items.map((item, index) => {
+        const target = item.value ?? item.label;
+        return <li key={item.label} ref={el => { itemRefs.current[index] = el; }} className={`line-sidebar__item${item.separated ? ' line-sidebar__item--separated' : ''}`}>
+          {item.group && <div className="line-sidebar__group">{item.group}</div>}
+          <button type="button" className="line-sidebar__button" aria-current={active === target ? 'page' : undefined} onClick={() => onItemClick(target)}>
+            <span className="line-sidebar__label">{item.icon}<span className="line-sidebar__text">{item.label}</span></span>
+          </button>
+        </li>;
+      })}
     </ul>
   </nav>;
 }

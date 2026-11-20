@@ -42,11 +42,20 @@ export class MemoryStorage implements Storage {
   }
 }
 
+export const EMPTY_DATA: Data = {
+  clients: [],
+  orders: [],
+  expenses: [],
+  leads: [],
+  payments: [],
+  partsPurchases: [],
+};
+
 const text = (x: unknown) => typeof x === 'string' && x.trim().length > 0;
 const amount = (x: unknown) => typeof x === 'number' && Number.isFinite(x) && x >= 0;
-function validate(value: unknown): Data {
+export function validateData(value: unknown, errorMessage = 'Los datos locales no son válidos. No se modificaron.'): Data {
   const d = value as Data;
-  const fail = (): never => { throw Error('Los datos locales no son válidos. No se modificaron.'); };
+  const fail = (): never => { throw Error(errorMessage); };
   if (!d || typeof d !== 'object' || !['clients', 'orders', 'expenses', 'leads', 'payments', 'partsPurchases'].every(
     key => Array.isArray((d as unknown as Record<string, unknown>)[key]),
   )) return fail();
@@ -68,8 +77,10 @@ function validate(value: unknown): Data {
       && [p.cost, p.sale, p.quantity].every(amount) && d.orders.some(o => o.id === p.orderId))) return fail();
   return structuredClone(d);
 }
+const validate = (value: unknown) => validateData(value);
 
-const editable = new Set(['clientId', 'equipment', 'mode', 'address', 'fault', 'diagnosis', 'parts', 'partsCost', 'labor', 'quote', 'price', 'repair', 'delivery', 'entry', 'finish', 'owner']);
+export const EDITABLE_ORDER_FIELDS = new Set(['clientId', 'equipment', 'mode', 'address', 'fault', 'diagnosis', 'parts', 'partsCost', 'labor', 'quote', 'price', 'repair', 'delivery', 'entry', 'finish', 'owner']);
+const editable = EDITABLE_ORDER_FIELDS;
 let writeQueue: Promise<void> = Promise.resolve();
 
 // Interpret each number's shortest decimal representation exactly, avoiding binary addition artifacts.
@@ -78,7 +89,7 @@ function decimal(x: number): [bigint, number] {
   const [whole, fraction = ''] = mantissa.split('.');
   return [BigInt(whole + fraction), fraction.length - Number(exponent)];
 }
-function sumDecimal(a: number, b: number): number {
+export function sumDecimal(a: number, b: number): number {
   const [aa, as] = decimal(a); const [bb, bs] = decimal(b);
   const scale = Math.max(as, bs);
   const sum = aa * 10n ** BigInt(scale - as) + bb * 10n ** BigInt(scale - bs);
@@ -90,10 +101,36 @@ function sumDecimal(a: number, b: number): number {
     throw Error('El importe no se puede representar.');
   return result;
 }
-function validDate(value: unknown): boolean {
+export function validDate(value: unknown): boolean {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return Number.isFinite(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+export function validateOrderPatch(data: Data, orderId: string, patch: OrderUpdate): Order {
+  const order = data.orders.find(o => o.id === orderId);
+  if (!order) throw Error('No se encontró la orden.');
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Reflect.ownKeys(patch).some(key => typeof key !== 'string' || !editable.has(key)))
+    throw Error('La edición contiene campos no permitidos.');
+  if (patch.price !== undefined && patch.price !== null && patch.price !== order.price && patch.price < order.paid)
+    throw Error('El precio final no puede ser menor a lo cobrado.');
+  if (patch.clientId !== undefined && patch.clientId !== order.clientId &&
+    ((order.originalId && data.orders.find(o => o.id === order.originalId)?.clientId !== patch.clientId) ||
+      data.orders.some(o => o.originalId === order.id && o.clientId !== patch.clientId)))
+    throw Error('El cliente no puede cambiar si rompe una garantía.');
+  return order;
+}
+
+export function validatePaymentInput(data: Data, orderId: string, input: PaymentInput): { order: Order; nextPaid: number } {
+  const order = data.orders.find(o => o.id === orderId);
+  if (!order) throw Error('No se encontró la orden.');
+  if (!input || typeof input.amount !== 'number' || !Number.isFinite(input.amount) || input.amount <= 0)
+    throw Error('El importe debe ser un número positivo y finito.');
+  if (!validDate(input.date)) throw Error('La fecha del cobro no es válida.');
+  const nextPaid = sumDecimal(order.paid, input.amount);
+  if (!Number.isFinite(nextPaid) || nextPaid <= order.paid) throw Error('El importe no se puede representar.');
+  if (order.price !== null && nextPaid > order.price) throw Error('El cobro supera el saldo pendiente.');
+  return { order, nextPaid };
 }
 
 export class JsonRepository implements CRMRepository {
@@ -124,31 +161,15 @@ export class JsonRepository implements CRMRepository {
   }
   async updateOrder(orderId: string, patch: OrderUpdate): Promise<Data> {
     return this.update(data => {
-      const order = data.orders.find(o => o.id === orderId);
-      if (!order) throw Error('No se encontró la orden.');
-      if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Reflect.ownKeys(patch).some(key => typeof key !== 'string' || !editable.has(key)))
-        throw Error('La edición contiene campos no permitidos.');
-      if (patch.price !== undefined && patch.price !== null && patch.price !== order.price && patch.price < order.paid)
-        throw Error('El precio final no puede ser menor a lo cobrado.');
-      if (patch.clientId !== undefined && patch.clientId !== order.clientId &&
-        ((order.originalId && data.orders.find(o => o.id === order.originalId)?.clientId !== patch.clientId) ||
-          data.orders.some(o => o.originalId === order.id && o.clientId !== patch.clientId)))
-        throw Error('El cliente no puede cambiar si rompe una garantía.');
+      const order = validateOrderPatch(data, orderId, patch);
       Object.assign(order, patch);
     });
   }
   async registerPayment(orderId: string, input: PaymentInput): Promise<Data> {
     return this.update(data => {
-      const order = data.orders.find(o => o.id === orderId);
-      if (!order) throw Error('No se encontró la orden.');
-      if (!input || typeof input.amount !== 'number' || !Number.isFinite(input.amount) || input.amount <= 0)
-        throw Error('El importe debe ser un número positivo y finito.');
-      if (!validDate(input.date)) throw Error('La fecha del cobro no es válida.');
-      const paid = sumDecimal(order.paid, input.amount);
-      if (!Number.isFinite(paid) || paid <= order.paid) throw Error('El importe no se puede representar.');
-      if (order.price !== null && paid > order.price) throw Error('El cobro supera el saldo pendiente.');
+      const { order, nextPaid } = validatePaymentInput(data, orderId, input);
       data.payments.push({ id: crypto.randomUUID(), orderId, amount: input.amount, date: input.date });
-      order.paid = paid;
+      order.paid = nextPaid;
     });
   }
   async addClient(input: Omit<Client, 'id'>): Promise<Data> {

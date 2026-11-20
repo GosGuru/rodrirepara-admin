@@ -1,72 +1,365 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
-import type { Client, Expense, Order } from '../repository';
-import { ClientPicker } from './ClientPicker';
+import { useId, useRef, useState, type FormEvent } from 'react';
+import { AlertCircle, DollarSign, FileText, Phone, Tag, User } from 'lucide-react';
+import type { Client, Expense } from '../repository';
+import { Select, type SelectOption } from './ui/Select';
+import { DatePicker } from './ui/DatePicker';
+import { SaveButton } from './ui/SaveButton';
+import { useSaveFeedback } from '../hooks/useSaveFeedback';
+import { isValidIsoDate, todayIsoLocal } from '../utils/date';
+import '../views/new-repair.css';
 
-const errorMessage = 'No se guardó. Revisá los datos o el espacio disponible y volvé a intentar.';
-const text = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
+const EXPENSE_CATEGORIES: readonly SelectOption[] = [
+  'Combustible',
+  'Transporte',
+  'Herramientas',
+  'Publicidad',
+  'Sueldos',
+  'Compras generales',
+].map((category) => ({ value: category, label: category }));
 
-function useFormSubmission(save: (data: FormData) => Promise<void>, onBusyChange?: (busy: boolean) => void) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  async function submit(event: FormEvent<HTMLFormElement>) {
+export function ClientForm({
+  onSave,
+  onConfirmed,
+  onCancel,
+  onBusyChange,
+}: {
+  onSave: (input: Omit<Client, 'id'>) => Promise<void>;
+  onConfirmed?: () => void;
+  onCancel?: () => void;
+  onBusyChange?: (busy: boolean) => void;
+}) {
+  const baseId = useId();
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const save = useSaveFeedback({ successHoldMs: 760, onBusyChange });
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    setBusy(true); onBusyChange?.(true); setError('');
-    try { await save(data); }
-    catch { setError(errorMessage); }
-    finally { setBusy(false); onBusyChange?.(false); }
+    if (save.busy) return;
+
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+    const nextErrors: { name?: string; phone?: string } = {};
+    if (!trimmedName) nextErrors.name = 'Completá el nombre del cliente.';
+    if (!trimmedPhone) nextErrors.phone = 'Completá el teléfono del cliente.';
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      if (nextErrors.name) nameRef.current?.focus();
+      else if (nextErrors.phone) phoneRef.current?.focus();
+      return;
+    }
+
+    setErrors({});
+    await save.run(
+      () => onSave({ name: trimmedName, phone: trimmedPhone }),
+      () => onConfirmed?.(),
+    );
   }
-  return { busy, error, submit };
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="form create-dialog__form">
+      <div className="create-dialog__fields">
+        <div className="field-group">
+          <label className="field-label" htmlFor={`${baseId}-name`}>
+            Nombre
+          </label>
+          <div className="field-input-wrap" data-invalid={Boolean(errors.name) || undefined}>
+            <span className="field-input-icon" aria-hidden="true">
+              <User size={16} />
+            </span>
+            <input
+              ref={nameRef}
+              id={`${baseId}-name`}
+              name="name"
+              type="text"
+              required
+              disabled={save.busy}
+              value={name}
+              placeholder="Ej. Ana García"
+              aria-invalid={Boolean(errors.name) || undefined}
+              aria-describedby={errors.name ? `${baseId}-name-err` : undefined}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (event.target.value.trim() && errors.name) {
+                  setErrors((prev) => ({ ...prev, name: undefined }));
+                }
+              }}
+            />
+          </div>
+          {errors.name && (
+            <p id={`${baseId}-name-err`} role="alert" className="field-error">
+              <AlertCircle size={14} aria-hidden="true" />
+              <span>{errors.name}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="field-group">
+          <label className="field-label" htmlFor={`${baseId}-phone`}>
+            Teléfono
+          </label>
+          <div className="field-input-wrap" data-invalid={Boolean(errors.phone) || undefined}>
+            <span className="field-input-icon" aria-hidden="true">
+              <Phone size={16} />
+            </span>
+            <input
+              ref={phoneRef}
+              id={`${baseId}-phone`}
+              name="phone"
+              type="tel"
+              required
+              disabled={save.busy}
+              value={phone}
+              placeholder="Ej. 099 123 456"
+              aria-invalid={Boolean(errors.phone) || undefined}
+              aria-describedby={errors.phone ? `${baseId}-phone-err` : undefined}
+              onChange={(event) => {
+                setPhone(event.target.value);
+                if (event.target.value.trim() && errors.phone) {
+                  setErrors((prev) => ({ ...prev, phone: undefined }));
+                }
+              }}
+            />
+          </div>
+          {errors.phone && (
+            <p id={`${baseId}-phone-err`} role="alert" className="field-error">
+              <AlertCircle size={14} aria-hidden="true" />
+              <span>{errors.phone}</span>
+            </p>
+          )}
+        </div>
+
+        {save.error && (
+          <div role="alert" className="form-alert">
+            <AlertCircle size={16} aria-hidden="true" />
+            <span>{save.error}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="create-dialog__actions">
+        {onCancel && (
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={save.busy}
+            onClick={onCancel}
+          >
+            Cancelar
+          </button>
+        )}
+        <SaveButton
+          status={save.status}
+          idleLabel="Guardar cliente"
+          savingLabel="Guardando..."
+          successLabel="Guardado"
+        />
+      </div>
+    </form>
+  );
 }
 
-function FormFrame({ children, submit, busy, error }: {
-  children: ReactNode; submit: (event: FormEvent<HTMLFormElement>) => void; busy: boolean; error: string;
+export function ExpenseForm({
+  onSave,
+  onConfirmed,
+  onCancel,
+  onBusyChange,
+}: {
+  onSave: (input: Omit<Expense, 'id'>) => Promise<void>;
+  onConfirmed?: () => void;
+  onCancel?: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
-  return <form onSubmit={submit} className="form">
-    <div className="create-dialog__fields">
-      {children}
-      {error && <p role="alert" className="error">{error}</p>}
-    </div>
-    <div className="create-dialog__actions"><button className="primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar'}</button></div>
-  </form>;
-}
+  const baseId = useId();
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Combustible');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(() => todayIsoLocal());
+  const [dateValid, setDateValid] = useState(true);
+  const [errors, setErrors] = useState<{ description?: string; amount?: string; date?: string }>({});
 
-export function ClientForm({ onSave, onBusyChange }: {
-  onSave: (input: Omit<Client, 'id'>) => Promise<void>; onBusyChange?: (busy: boolean) => void;
-}) {
-  const state = useFormSubmission(data => onSave({ name: text(data, 'name'), phone: text(data, 'phone') }), onBusyChange);
-  return <FormFrame {...state}>
-    <label>Nombre<input name="name" placeholder="Ej. Ana García" required /></label>
-    <label>Teléfono<input name="phone" placeholder="Ej. 11 2345 6789" required /></label>
-  </FormFrame>;
-}
+  const descRef = useRef<HTMLInputElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const save = useSaveFeedback({ successHoldMs: 760, onBusyChange });
 
-export function ExpenseForm({ onSave }: { onSave: (input: Omit<Expense, 'id'>) => Promise<void> }) {
-  const state = useFormSubmission(data => onSave({ description: text(data, 'description'), category: text(data, 'category'), amount: Number(text(data, 'amount')), date: text(data, 'date') }));
-  return <FormFrame {...state}>
-    <label>Concepto<input name="description" placeholder="Ej. Combustible para visitas" required /></label>
-    <label>Categoría<select name="category">{['Combustible', 'Transporte', 'Herramientas', 'Publicidad', 'Sueldos', 'Compras generales'].map(category => <option key={category}>{category}</option>)}</select></label>
-    <label>Importe ($)<input name="amount" type="number" min="0" step="0.01" placeholder="Ej. 15000" required /></label>
-    <label>Fecha<input name="date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} /></label>
-  </FormFrame>;
-}
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (save.busy) return;
 
-export function RepairForm({ clients, clientId, onClientChange, onAddClient, onSave }: {
-  clients: readonly Client[]; clientId: string; onClientChange: (id: string) => void; onAddClient: () => void;
-  onSave: (input: Omit<Order, 'id'>) => Promise<void>;
-}) {
-  const state = useFormSubmission(data => onSave({
-    clientId: text(data, 'client'), equipment: text(data, 'equipment'), mode: text(data, 'mode') as Order['mode'],
-    address: text(data, 'address'), fault: text(data, 'fault'), diagnosis: '', parts: '', partsCost: 0, labor: 0,
-    quote: 0, price: null, paid: 0, repair: 'Visita o recepción', delivery: 'Pendiente', entry: text(data, 'date'),
-    finish: '', owner: 'Rodrigo', originalId: '',
-  }));
-  return <FormFrame {...state}>
-    <ClientPicker clients={clients} value={clientId} onChange={onClientChange} onAdd={onAddClient} />
-    <label>Equipo y modelo<input name="equipment" placeholder="Ej. Heladera Samsung" required /></label>
-    <label>Modalidad<select name="mode"><option>Taller</option><option>Domicilio</option></select></label>
-    <label>Dirección o recepción<input name="address" placeholder="Ej. Recepción en taller" required /></label>
-    <label>Falla informada<input name="fault" placeholder="Ej. No enfría" required /></label>
-    <label>Fecha de ingreso<input name="date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} /></label>
-  </FormFrame>;
+    const trimmedDesc = description.trim();
+    const numericAmount = Number(amount);
+    const nextErrors: { description?: string; amount?: string; date?: string } = {};
+    if (!trimmedDesc) nextErrors.description = 'Completá el concepto del gasto.';
+    if (amount.trim() === '' || !Number.isFinite(numericAmount) || numericAmount < 0) {
+      nextErrors.amount = 'Ingresá un importe válido.';
+    }
+    if (!dateValid || !isValidIsoDate(date)) {
+      nextErrors.date = 'Ingresá una fecha válida (dd/mm/aaaa).';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      if (nextErrors.description) descRef.current?.focus();
+      else if (nextErrors.amount) amountRef.current?.focus();
+      else if (nextErrors.date) document.getElementById(`${baseId}-date`)?.focus();
+      return;
+    }
+
+    setErrors({});
+    await save.run(
+      () => onSave({ description: trimmedDesc, category, amount: numericAmount, date }),
+      () => onConfirmed?.(),
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="form create-dialog__form">
+      <div className="create-dialog__fields">
+        <div className="field-group">
+          <label className="field-label" htmlFor={`${baseId}-desc`}>
+            Concepto
+          </label>
+          <div className="field-input-wrap" data-invalid={Boolean(errors.description) || undefined}>
+            <span className="field-input-icon" aria-hidden="true">
+              <FileText size={16} />
+            </span>
+            <input
+              ref={descRef}
+              id={`${baseId}-desc`}
+              name="description"
+              type="text"
+              required
+              disabled={save.busy}
+              value={description}
+              placeholder="Ej. Combustible para visitas"
+              aria-invalid={Boolean(errors.description) || undefined}
+              onChange={(event) => {
+                setDescription(event.target.value);
+                if (event.target.value.trim() && errors.description) {
+                  setErrors((prev) => ({ ...prev, description: undefined }));
+                }
+              }}
+            />
+          </div>
+          {errors.description && (
+            <p role="alert" className="field-error">
+              <AlertCircle size={14} aria-hidden="true" />
+              <span>{errors.description}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="field-group">
+          <span className="field-label" id={`${baseId}-cat-label`}>
+            Categoría
+          </span>
+          <Select
+            id={`${baseId}-cat`}
+            name="category"
+            value={category}
+            options={EXPENSE_CATEGORIES}
+            icon={<Tag size={15} />}
+            disabled={save.busy}
+            ariaLabelledBy={`${baseId}-cat-label`}
+            onChange={setCategory}
+          />
+        </div>
+
+        <div className="field-row-2">
+          <div className="field-group">
+            <label className="field-label" htmlFor={`${baseId}-amount`}>
+              Importe ($)
+            </label>
+            <div className="field-input-wrap" data-invalid={Boolean(errors.amount) || undefined}>
+              <span className="field-input-icon" aria-hidden="true">
+                <DollarSign size={16} />
+              </span>
+              <input
+                ref={amountRef}
+                id={`${baseId}-amount`}
+                name="amount"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                disabled={save.busy}
+                value={amount}
+                placeholder="Ej. 1500"
+                aria-invalid={Boolean(errors.amount) || undefined}
+                onChange={(event) => {
+                  setAmount(event.target.value);
+                  if (errors.amount) setErrors((prev) => ({ ...prev, amount: undefined }));
+                }}
+              />
+            </div>
+            {errors.amount && (
+              <p role="alert" className="field-error">
+                <AlertCircle size={14} aria-hidden="true" />
+                <span>{errors.amount}</span>
+              </p>
+            )}
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor={`${baseId}-date`}>
+              Fecha
+            </label>
+            <DatePicker
+              id={`${baseId}-date`}
+              name="date"
+              value={date}
+              disabled={save.busy}
+              error={Boolean(errors.date)}
+              onValidityChange={(valid) => {
+                setDateValid(valid);
+                if (valid && errors.date) setErrors((prev) => ({ ...prev, date: undefined }));
+              }}
+              onChange={(nextIso) => {
+                setDate(nextIso);
+                if (isValidIsoDate(nextIso) && errors.date) {
+                  setErrors((prev) => ({ ...prev, date: undefined }));
+                }
+              }}
+            />
+            {errors.date && (
+              <p role="alert" className="field-error">
+                <AlertCircle size={14} aria-hidden="true" />
+                <span>{errors.date}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {save.error && (
+          <div role="alert" className="form-alert">
+            <AlertCircle size={16} aria-hidden="true" />
+            <span>{save.error}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="create-dialog__actions">
+        {onCancel && (
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={save.busy}
+            onClick={onCancel}
+          >
+            Cancelar
+          </button>
+        )}
+        <SaveButton
+          status={save.status}
+          idleLabel="Guardar gasto"
+          savingLabel="Guardando..."
+          successLabel="Guardado"
+        />
+      </div>
+    </form>
+  );
 }

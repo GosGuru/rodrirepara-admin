@@ -4,6 +4,7 @@ import type { WorkshopActions } from '../components/workshop/actions';
 import { createWorkshopActions } from '../components/workshop/actions';
 import { JsonRepository, MemoryStorage, type Data } from '../repository';
 import { dashboard } from '../selectors';
+import { sampleSeedData } from '../test-fixtures';
 
 test('movimiento exige selección exacta, captura ID y espera solo patch de reparación', async () => {
   const calls: unknown[] = []; let resolve!: () => void;
@@ -39,6 +40,9 @@ class ObservedStorage extends MemoryStorage {
 }
 async function persistedBoard() {
   const storage = new ObservedStorage();
+  storage.setItem('rodrigo-crm', JSON.stringify(structuredClone(sampleSeedData)));
+  storage.attempts = 0;
+  storage.writes = 0;
   const repo = new JsonRepository(storage);
   await repo.updateOrder('RR-1049', {});
   const applied: Data[] = [], notices: string[] = [];

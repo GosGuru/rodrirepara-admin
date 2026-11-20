@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test';
 import { JsonRepository, MemoryStorage, type CRMRepository, type Data } from '../../repository';
 import { dashboard } from '../../selectors';
+import { createSeededRepository } from '../../test-fixtures';
 import { createWorkshopActions } from './actions';
 
 test('acciones aplican datos persistidos y anuncian solo el éxito, sin filtrar fallos', async () => {
-  const storage = new MemoryStorage();
-  const repo = new JsonRepository(storage);
+  const { storage, repo } = createSeededRepository();
   const before = await repo.load();
   const id = before.orders[0].id;
   let applied: Data | undefined;
@@ -27,7 +27,7 @@ test('acciones aplican datos persistidos y anuncian solo el éxito, sin filtrar 
 });
 
 test('edición y cobro esperan la persistencia, conservan destino y aplican exactamente una vez', async () => {
-  const repo = new JsonRepository(new MemoryStorage());
+  const { repo } = createSeededRepository();
   const initial = await repo.load();
   const target = initial.orders[0];
   const events: unknown[] = [];
@@ -74,8 +74,7 @@ test('edición y cobro esperan la persistencia, conservan destino y aplican exac
 });
 
 test('rechazos de dominio y almacenamiento preservan estado, indicadores y cola', async () => {
-  const storage = new MemoryStorage();
-  const repo = new JsonRepository(storage);
+  const { storage, repo } = createSeededRepository();
   const initial = await repo.load();
   const target = initial.orders[0];
   const events: unknown[] = [];

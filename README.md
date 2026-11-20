@@ -1,12 +1,14 @@
 # Rodrigo Repara · tablero operativo
 
-Aplicación de demostración para seguir reparaciones, clientes y dinero. Los datos son ficticios y no deben usarse en producción: se guardan como **JSON local en este navegador**, no en una base compartida.
+Tablero operativo para gestionar reparaciones, clientes, cobros y gastos con persistencia en **Supabase** protegida por **Supabase Auth + Row Level Security (RLS)**. El proyecto inicia completamente vacío y listo para cargar datos reales.
 
-## Inicio
+## Configuración de Supabase e inicio
 
 1. Instalá las dependencias con Bun: `bun install`.
-2. Ejecutá `bun run dev` y abrí la dirección local indicada.
-3. Usá los accesos rápidos para crear clientes, reparaciones y gastos. La información queda en este navegador.
+2. Copiá `.env.example` a `.env.local` y configurá tus credenciales de Supabase (`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). En Vercel u otro hosting, cargá esas mismas variables de entorno.
+3. En el **SQL Editor** de tu proyecto de Supabase, ejecutá una sola vez el script [`supabase/schema.sql`](supabase/schema.sql). Crea las 6 tablas vacías (`clients`, `orders`, `expenses`, `leads`, `payments`, `parts_purchases`), el RPC atómico `register_payment`, las restricciones de integridad y las políticas RLS exclusivas para usuarios autenticados (`authenticated`, sin acceso `anon`).
+4. En **Supabase → Authentication → Users**, creá el usuario con correo y contraseña para acceder al panel (el formulario de acceso no expone registro público).
+5. Ejecutá `bun run dev`, abrí la dirección local indicada e iniciá sesión. Usá los accesos rápidos para cargar clientes, reparaciones y gastos reales.
 
 ## Uso de las vistas
 
@@ -50,8 +52,8 @@ El código en `src/components/react-bits/` adapta el cálculo de proximidad y su
 
 ## Datos y límites
 
-La semilla `src/seed.json` contiene órdenes, consultas, movimientos y compras ficticias. Los indicadores se derivan de esos registros; las fechas históricas de ejemplo pueden hacer que el cobro de hoy sea cero. Solo se cuentan pendientes con precio final. El margen de una orden terminada es su precio menos costos de repuestos y mano de obra; no es caja. Los movimientos netos del período son cobros menos gastos generales y compras de repuestos, sin saldo inicial ni otros movimientos no registrados. Los presupuestos no son ganancia final. El símbolo $ no determina moneda ni reglas fiscales.
+La semilla `src/seed.json` está vacía (`clients`, `orders`, `expenses`, `leads`, `payments` y `partsPurchases` sin registros) para arrancar desde cero sin datos ficticios. Solo se cuentan pendientes con precio final. El margen de una orden terminada es su precio menos costos de repuestos y mano de obra; no es caja. Los movimientos netos del período son cobros menos gastos generales y compras de repuestos, sin saldo inicial ni otros movimientos no registrados. Los presupuestos no son ganancia final. El símbolo $ no determina moneda ni reglas fiscales.
 
-El repositorio asíncrono `CRMRepository` separa la interfaz de React del adaptador JSON. Un futuro adaptador podría implementar el mismo contrato para Supabase, después de decidir autenticación, permisos y políticas; hoy no existe conexión, sincronización ni acceso compartido. JSON inválido se informa sin reemplazarlo. Si falla una escritura, se conserva el formulario y no se anuncia éxito. No hay borrado, migraciones ni reinicio desde la aplicación.
+El repositorio asíncrono `CRMRepository` separa la interfaz de React de la persistencia: en producción usa `SupabaseRepository` (`src/supabase-repository.ts`) detrás de `AuthGate` (`src/components/AuthGate.tsx`) y RLS exclusiva para usuarios autenticados; `JsonRepository` se conserva para pruebas aisladas. Los cobros se registran mediante el RPC transaccional `register_payment` con bloqueo de fila (`FOR UPDATE`). Si falla una escritura, se conserva el formulario y no se anuncia éxito. Los colores personalizados del tablero Kanban se guardan en `localStorage` por navegador.
 
-Consultas y compras de repuestos siguen siendo registros de ejemplo de solo lectura. Se pueden registrar nuevos cobros, pero no editar los movimientos ya registrados. Las escrituras usan una cola común y Web Locks cuando el navegador los ofrece; sin Web Locks no se garantiza coordinación entre pestañas. No hay actualización en vivo entre pestañas: si otra pestaña cambia un saldo, recargá para verlo. Cada guardado valida los datos persistidos más recientes, incluso cuando la pantalla todavía muestra un saldo anterior. Las garantías vinculan la orden original sin inventar una duración. El detalle de servicio no tiene validez fiscal. Rodrigo es un responsable ficticio; la decisión sobre usuarios A/B/C sigue pendiente y no hay permisos activos.
+Consultas y compras de repuestos permanecen en solo lectura desde la interfaz actual. Se pueden registrar nuevos cobros, pero no editar ni borrar los movimientos ya registrados. Las garantías vinculan la orden original sin inventar una duración y el detalle de servicio no tiene validez fiscal.

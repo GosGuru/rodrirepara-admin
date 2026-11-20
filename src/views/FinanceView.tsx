@@ -5,7 +5,7 @@ import { Table } from "../components/Table";
 import "./module-visuals.css";
 export function FinanceView({ data: d, pending, onCreateExpense }: { data: Data; pending: number; onCreateExpense: () => void }) {
   return <section className="panel mv-finance">
-    <div className="heading"><div><h2>Movimientos y pendientes</h2><p>La caja no es margen por orden. Datos de ejemplo, sin saldo inicial.</p></div><button onClick={onCreateExpense}><Receipt aria-hidden="true" /> Registrar gasto</button></div>
+    <div className="heading"><div><h2>Movimientos y pendientes</h2><p>La caja no es margen por orden. Sin saldo inicial.</p></div><button onClick={onCreateExpense}><Receipt aria-hidden="true" /> Registrar gasto</button></div>
     <div className="mv-finance-periods">{(["Hoy", "Semana", "Mes"] as const).map((label, i) => {
       const now = new Date();
       const end = now.toISOString().slice(0, 10);

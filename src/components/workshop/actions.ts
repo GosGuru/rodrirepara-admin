@@ -13,6 +13,11 @@ const known = new Set([
   'Los datos locales no son válidos. No se modificaron.',
   'No se pudieron leer los datos locales. Revisá el acceso al almacenamiento del navegador. No se modificaron.',
   'No se pudieron leer los datos locales: contenido inválido. No se modificaron.',
+  'Faltan las tablas en Supabase. Ejecutá supabase/schema.sql en el SQL Editor.',
+  'Tu sesión expiró o no tenés permisos. Volvé a iniciar sesión.',
+  'No se pudo conectar con la base de datos. Revisá tu conexión y volvé a intentar.',
+  'Los datos recibidos de Supabase no son válidos.',
+  'Los datos ingresados no son válidos. No se guardaron.',
 ]);
 export function createWorkshopActions(repo: CRMRepository, apply: (data: Data) => void, notice: (text: string) => void): WorkshopActions {
   async function save(operation: () => Promise<Data>, success: string) {

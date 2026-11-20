@@ -1,6 +1,19 @@
 import { expect, test } from 'bun:test';
 import { JsonRepository, MemoryStorage } from './repository';
 import { filterOrders, paymentStatus, dashboard } from './selectors';
+import { createSeededRepository } from './test-fixtures';
+
+test('arranca completamente vacío sin datos de ejemplo en seed.json', async () => {
+  const data = await new JsonRepository(new MemoryStorage()).load();
+  expect(data).toEqual({
+    clients: [],
+    orders: [],
+    expenses: [],
+    leads: [],
+    payments: [],
+    partsPurchases: [],
+  });
+});
 
 test('carga semilla y conserva cambios tras recargar', async () => {
   const storage = new MemoryStorage(); const repo = new JsonRepository(storage);
@@ -22,7 +35,8 @@ test('fallo de escritura no cambia el estado anterior', async () => {
   expect(await repo.load()).toEqual(before);
 });
 test('separa reparación, cobro y entrega y filtra modalidad y búsqueda', async () => {
-  const data = await new JsonRepository(new MemoryStorage()).load();
+  const { repo } = createSeededRepository();
+  const data = await repo.load();
   expect(data.orders.some(o => o.repair === 'Terminado' && paymentStatus(o) === 'Pendiente')).toBe(true);
   expect(data.orders.some(o => paymentStatus(o) === 'Cobrado' && o.delivery === 'Pendiente')).toBe(true);
   expect(filterOrders(data, 'pedro', 'Domicilio').length).toBeGreaterThan(0);

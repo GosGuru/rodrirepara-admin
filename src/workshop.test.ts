@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test';
 import { JsonRepository, MemoryStorage, type Data } from './repository';
 import { dashboard, paymentStatus } from './selectors';
+import { createSeededRepository, sampleSeedData } from './test-fixtures';
 
 const date = '2026-06-18';
 async function setup() {
-  const storage = new MemoryStorage();
-  const repo = new JsonRepository(storage);
+  const { storage, repo } = createSeededRepository();
   const data = await repo.load();
   const { id: _, ...base } = data.orders[0];
   const created = await repo.addOrder({ ...base, originalId: '', price: null, paid: 0, repair: 'Cerrado', delivery: 'Entregado' });
@@ -157,7 +157,10 @@ test('una sola escritura contiene cobro y acumulado; error libera la cola', asyn
     writes: string[] = [];
     override setItem(key: string, value: string) { super.setItem(key, value); this.writes.push(value); }
   }
-  const storage = new Watched(); const repo = new JsonRepository(storage); const base = await repo.load();
+  const storage = new Watched();
+  storage.setItem('rodrigo-crm', JSON.stringify(structuredClone(sampleSeedData)));
+  storage.writes.length = 0;
+  const repo = new JsonRepository(storage); const base = await repo.load();
   const { id: _, ...order } = base.orders[0]; const added = await repo.addOrder({ ...order, originalId: '', paid: 0, price: null });
   const id = added.orders.at(-1)!.id; const n = storage.writes.length;
   const result = await repo.registerPayment(id, { amount: 123, date });

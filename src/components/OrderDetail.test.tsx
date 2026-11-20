@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OrderDetail } from "./OrderDetail";
-import { JsonRepository, MemoryStorage, type Data, type Order } from "../repository";
+import { type Data, type Order } from "../repository";
+import { createSeededRepository } from "../test-fixtures";
 
 const original: Order = { id: "O-1", clientId: "C-1", equipment: "Original", mode: "Taller", address: "Taller", fault: "Falla", diagnosis: "", parts: "", partsCost: 0, labor: 0, quote: 0, price: 0, paid: 0, repair: "Terminado", delivery: "Pendiente", entry: "2024-01-01", finish: "", owner: "Rodrigo", originalId: "" };
 const order: Order = { ...original, id: "O-2", equipment: "Garantía", price: null, originalId: original.id };
@@ -49,7 +50,7 @@ test("detalle ofrece acciones opcionales y muestra solo cobros reales de la orde
 });
 
 test("garantía real y original muestran solo el historial del ID mostrado", async () => {
-  const data = await new JsonRepository(new MemoryStorage()).load();
+  const data = await createSeededRepository().repo.load();
   const child = data.orders.find(o => o.id === 'RR-1049')!;
   const parent = data.orders.find(o => o.id === 'RR-1030')!;
   expect(child.originalId).toBe(parent.id);

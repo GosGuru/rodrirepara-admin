@@ -28,3 +28,16 @@ test('el encabezado permite el título y propósito del diseño real sin recuper
   expect(html).not.toContain('class="eyebrow"');
   expect(html).not.toContain('class="demo"');
 });
+
+test('el encabezado del tablero expone Registrar gasto y Nueva reparación con callbacks reales', () => {
+  const html = renderToStaticMarkup(
+    <Header
+      view="Resumen"
+      dashboardChrome
+      onCreateRepair={() => {}}
+      onCreateExpense={() => {}}
+    />,
+  );
+  expect(html).toContain('Registrar gasto');
+  expect(html).toContain('Nueva reparación');
+});

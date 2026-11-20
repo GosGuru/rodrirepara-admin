@@ -31,3 +31,42 @@ test("tabla preserva columnas y detalle inline", () => {
   const html = render();
   for (const text of ["1 órdenes", "Orden y cliente", "Equipo / modalidad", "Reparación", "Cobro", "Entrega", "Detalle", "O-2", "Ana", "Heladera", "Taller", "Terminado", "Pendiente", "Ver detalle"]) expect(html).toContain(text);
 });
+test("expone Más filtros, menú contextual por orden y sin selector de fechas decorativo", () => {
+  const html = render();
+  expect(html).toContain("Más filtros");
+  expect(html).toContain('aria-label="Más acciones para O-2"');
+  expect(html).toContain('aria-haspopup="menu"');
+  expect(html).not.toContain("Todo el período");
+  expect(html).not.toContain("Recepción");
+});
+test("trunca visualmente identificadores largos conservando acceso al valor completo", () => {
+  const longId = "8b4196ed-3875-4f59-94fc-bddebe85f5b0";
+  const longOrder: Order = { ...order, id: longId };
+  const longData: Data = { ...data, orders: [longOrder] };
+  const html = renderToStaticMarkup(
+    <OrdersView data={longData} filtered={[longOrder]} query="" mode="Todas" onQueryChange={() => {}} onModeChange={() => {}} />,
+  );
+  expect(html).toContain("8b4196ed…f5b0");
+  expect(html).toContain(`title="${longId}"`);
+  expect(html).toContain(`Identificador completo ${longId}`);
+});
+test("soporta estados especiales de carga, base vacía y error con reintento", () => {
+  const loadingHtml = renderToStaticMarkup(
+    <OrdersView data={data} filtered={data.orders} query="" mode="Todas" onQueryChange={() => {}} onModeChange={() => {}} loading />,
+  );
+  expect(loadingHtml).toContain('aria-busy="true"');
+  expect(loadingHtml).toContain("Cargando órdenes");
+
+  const emptyData: Data = { ...data, orders: [] };
+  const emptyHtml = renderToStaticMarkup(
+    <OrdersView data={emptyData} filtered={[]} query="" mode="Todas" onQueryChange={() => {}} onModeChange={() => {}} />,
+  );
+  expect(emptyHtml).toContain("Todavía no hay órdenes cargadas");
+
+  const errorHtml = renderToStaticMarkup(
+    <OrdersView data={data} filtered={data.orders} query="" mode="Todas" onQueryChange={() => {}} onModeChange={() => {}} error="Error de lectura" onRetry={() => {}} />,
+  );
+  expect(errorHtml).toContain('role="alert"');
+  expect(errorHtml).toContain("Error de lectura");
+  expect(errorHtml).toContain("Reintentar");
+});

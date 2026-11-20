@@ -9,11 +9,12 @@ export type SideSheetProps = {
   children: ReactNode;
   footer?: ReactNode;
   busy?: boolean;
+  className?: string;
   onRequestClose: () => void;
 };
 
 /** Controlled visual shell; callers retain record identity and form state. */
-export function SideSheet({ open, titleId, header, children, footer, busy = false, onRequestClose }: SideSheetProps) {
+export function SideSheet({ open, titleId, header, children, footer, busy = false, className, onRequestClose }: SideSheetProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const origin = useRef<HTMLElement | null>(null);
   const requestClose = useRef(onRequestClose);
@@ -78,7 +79,7 @@ export function SideSheet({ open, titleId, header, children, footer, busy = fals
   return createPortal(
     <dialog
       ref={dialog}
-      className={`side-sheet${entered ? ' side-sheet--entered' : ''}`}
+      className={`side-sheet${entered ? ' side-sheet--entered' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       aria-busy={busy || undefined}
       onClose={restoreFocus}

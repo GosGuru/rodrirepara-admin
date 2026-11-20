@@ -1,14 +1,14 @@
 import { expect, test } from 'bun:test';
 import { JsonRepository, MemoryStorage, type Order } from './repository';
 import { dashboard, filterOrders, paymentStatus } from './selectors';
+import { createSeededRepository, createSeededStorage } from './test-fixtures';
 
 const key = 'rodrigo-crm';
 const client = { name: 'Julia', phone: '123' };
 const expense = { description: 'Gas', category: 'Combustible', amount: 20, date: '2026-01-01' };
 
 async function setup() {
-  const storage = new MemoryStorage();
-  const repo = new JsonRepository(storage);
+  const { storage, repo } = createSeededRepository();
   const seed = await repo.load();
   const { id: _id, ...order } = seed.orders[0];
   // Begin with an existing persisted value, so failed operations must preserve it byte-for-byte.
@@ -85,7 +85,7 @@ test('filas nulas, enlaces inválidos y JSON corrupto se rechazan sin reemplazar
 });
 
 test('búsqueda, modalidad y estados de orden permanecen independientes', async () => {
-  const data = await new JsonRepository(new MemoryStorage()).load();
+  const data = await new JsonRepository(createSeededStorage()).load();
   expect(filterOrders(data, 'PEDRO', 'Domicilio').length).toBe(2);
   expect(filterOrders(data, 'PEDRO', 'Taller')).toHaveLength(0);
   expect(filterOrders(data, 'sin coincidencia', 'Todas')).toHaveLength(0);

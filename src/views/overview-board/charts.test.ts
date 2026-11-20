@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import seed from '../../seed.json';
+import { sampleSeedData as seed } from '../../test-fixtures';
 import type { Data } from '../../repository';
 import { chartData } from './charts';
 test('gráficos usan registros reales, cero, nulos y fechas antiguas sin mutar', () => {
