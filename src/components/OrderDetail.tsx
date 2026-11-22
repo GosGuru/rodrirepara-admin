@@ -100,6 +100,8 @@ export function OrderDetail({
   const [tab, setTab] = useState<DetailTab>("resumen");
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(order.diagnosis);
   const [quickError, setQuickError] = useState("");
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
@@ -115,12 +117,16 @@ export function OrderDetail({
     if (!sheetOpen) {
       setStatusMenuOpen(false);
       setContactOpen(false);
+      setEditingNote(false);
+      setNoteDraft(order.diagnosis);
       setQuickError("");
       return;
     }
     setTab("resumen");
     setStatusMenuOpen(false);
     setContactOpen(false);
+    setEditingNote(false);
+    setNoteDraft(order.diagnosis);
     setQuickError("");
     if (initialForm === "edit" && actions) {
       setForm("edit");
@@ -607,36 +613,90 @@ export function OrderDetail({
                       <FileText size={14} strokeWidth={1.9} aria-hidden="true" />
                       <span>Notas</span>
                     </h3>
-                    {actions && (
+                    {actions && !editingNote && (
                       <button
                         type="button"
                         className="od-icon-pencil"
-                        aria-label="Editar notas y diagnóstico"
+                        aria-label="Editar nota"
+                        title="Agregar o editar nota"
                         disabled={busy}
-                        onClick={() => start("edit")}
+                        onClick={() => {
+                          setNoteDraft(order.diagnosis);
+                          setEditingNote(true);
+                        }}
                       >
                         <Pencil size={13} strokeWidth={1.9} aria-hidden="true" />
                       </button>
                     )}
                   </div>
                   <div className="od-notes-box">
-                    {hasNotes ? (
-                      <dl className="od-notes-dl">
-                        <div>
-                          <dt>Diagnóstico</dt>
-                          <dd>{order.diagnosis || "Pendiente"}</dd>
+                    {editingNote ? (
+                      <form
+                        className="od-notes-editor"
+                        onSubmit={async e => {
+                          e.preventDefault();
+                          await quickUpdate({ diagnosis: noteDraft.trim() });
+                          setEditingNote(false);
+                        }}
+                      >
+                        <textarea
+                          className="od-notes-textarea"
+                          aria-label="Nota libre"
+                          rows={4}
+                          placeholder="Escribí una nota libre sobre el cliente o la reparación…"
+                          value={noteDraft}
+                          disabled={busy}
+                          autoFocus
+                          onChange={e => setNoteDraft(e.target.value)}
+                        />
+                        <div className="od-notes-actions">
+                          <button type="submit" className="od-notes-save" disabled={busy}>
+                            {busy ? "Guardando…" : "Guardar nota"}
+                          </button>
+                          <button
+                            type="button"
+                            className="od-notes-cancel"
+                            disabled={busy}
+                            onClick={() => {
+                              setNoteDraft(order.diagnosis);
+                              setEditingNote(false);
+                            }}
+                          >
+                            Cancelar
+                          </button>
                         </div>
-                        <div>
-                          <dt>Repuestos</dt>
-                          <dd>{order.parts || "Sin asignar"}</dd>
-                        </div>
-                        <div>
-                          <dt>Responsable</dt>
-                          <dd>{order.owner}</dd>
-                        </div>
-                      </dl>
+                      </form>
+                    ) : hasNotes ? (
+                      <div className="od-notes-content">
+                        {order.diagnosis.trim() && (
+                          <p className="od-notes-text">{order.diagnosis.trim()}</p>
+                        )}
+                        {order.parts.trim() && order.parts.trim() !== "Sin repuestos asignados" && order.parts.trim() !== "Sin repuestos" && (
+                          <dl className="od-notes-dl">
+                            <div>
+                              <dt>Repuestos</dt>
+                              <dd>{order.parts}</dd>
+                            </div>
+                          </dl>
+                        )}
+                      </div>
                     ) : (
-                      <p className="od-notes-empty">Sin notas</p>
+                      <p className="od-notes-empty">
+                        Sin notas.{" "}
+                        {actions && (
+                          <button
+                            type="button"
+                            className="od-notes-add-link"
+                            disabled={busy}
+                            onClick={() => {
+                              setNoteDraft("");
+                              setEditingNote(true);
+                            }}
+                          >
+                            Agregar nota
+                          </button>
+                        )}
+                      </p>
                     )}
                   </div>
                 </div>

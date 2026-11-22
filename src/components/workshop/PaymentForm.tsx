@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
-import type { Order, PaymentInput } from '../../repository';
+import { sumDecimal, type Order, type PaymentInput } from '../../repository';
 import { money } from '../../selectors';
+import { todayIsoLocal } from '../../utils/date';
 import './payment-form.css';
 
 export type PaymentFormProps = {
@@ -19,11 +20,27 @@ const genericError = 'No se guardó. Revisá los datos o el espacio disponible y
 export function PaymentForm({ order, onSave, onCancel, formId, hideActions = false, showExamples = false, onBusyChange }: PaymentFormProps) {
   const id = useId();
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayIsoLocal());
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const noBalance = order.price !== null && order.paid >= order.price;
+  const parsedAmount = amount.trim() ? Number(amount) : NaN;
+  let previewPaid: number | null = null;
+  let previewBalance: number | null = null;
+  if (Number.isFinite(parsedAmount) && parsedAmount > 0) {
+    try {
+      const candidate = sumDecimal(order.paid, parsedAmount);
+      if (Number.isFinite(candidate) && candidate > order.paid) {
+        previewPaid = candidate;
+        if (order.price !== null && candidate <= order.price) {
+          previewBalance = Math.max(0, sumDecimal(order.price, -candidate));
+        }
+      }
+    } catch {
+      previewPaid = null;
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,12 +79,20 @@ export function PaymentForm({ order, onSave, onCancel, formId, hideActions = fal
       {noBalance && <p className="payment-form__hint">No hay saldo cobrable: el precio final ya está cubierto.</p>}
       <div className="payment-form__fields">
         <label htmlFor={`${id}-amount`}>Importe ($)
-          <input id={`${id}-amount`} name="amount" type="number" min="0" step="any" placeholder={showExamples ? 'Ej. 10000' : undefined} required autoFocus value={amount} onChange={event => setAmount(event.target.value)} />
+          <input id={`${id}-amount`} name="amount" type="number" min="0" step="any" placeholder={showExamples ? 'Ej. 10000' : undefined} required autoFocus value={amount} onChange={event => setAmount(event.target.value)} onWheel={event => event.currentTarget.blur()} />
         </label>
         <label htmlFor={`${id}-date`}>Fecha del cobro
           <input id={`${id}-date`} name="date" type="date" required value={date} onChange={event => setDate(event.target.value)} />
         </label>
       </div>
+      {previewPaid !== null && (
+        <p className="payment-form__hint">
+          Cobrado pasará a <strong>{money(previewPaid)}</strong>
+          {order.price !== null && (previewBalance !== null
+            ? <> · Saldo quedará en <strong>{money(previewBalance)}</strong></>
+            : ' · Supera el saldo pendiente')}
+        </p>
+      )}
       {error && <p className="payment-form__error" role="alert">{error}</p>}
       {!hideActions && <div className="payment-form__actions">
         <button type="submit" disabled={busy || noBalance}>{busy ? 'Guardando cobro…' : 'Guardar cobro'}</button>

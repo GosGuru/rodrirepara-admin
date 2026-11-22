@@ -102,7 +102,7 @@ export function OrderEditor({ order, clients, orders, onSave, onCancel, formId, 
             : field.key === 'mode' ? <select {...common}><option>Taller</option><option>Domicilio</option></select>
             : field.key === 'delivery' ? <select {...common}><option>Pendiente</option><option>Entregado</option></select>
             : field.multiline ? <textarea {...common} rows={2} />
-            : <input {...common} ref={field.key === 'equipment' ? equipment : undefined} type={field.number ? 'number' : 'text'} min={field.number ? '0' : undefined} step={field.number ? 'any' : undefined} />}
+            : <input {...common} ref={field.key === 'equipment' ? equipment : undefined} type={field.number ? 'number' : 'text'} min={field.number ? '0' : undefined} step={field.number ? 'any' : undefined} onWheel={field.number ? (event => event.currentTarget.blur()) : undefined} />}
           {field.key === 'clientId' && clientLocked && <small id={`${id}-warranty`}>El cliente no se puede cambiar porque la orden está vinculada a una garantía.</small>}
           {field.key === 'price' && <small>Dejá vacío si no hay precio final. Un precio nuevo no puede ser menor a lo cobrado.</small>}
           {(field.key === 'entry' || field.key === 'finish') && <small>Fecha como texto; se conserva el formato existente.</small>}

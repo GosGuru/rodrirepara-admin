@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 import { JsonRepository, MemoryStorage } from './repository';
 import { filterOrders, paymentStatus, dashboard } from './selectors';
 import { createSeededRepository } from './test-fixtures';
+import { todayIsoLocal } from './utils/date';
 
 test('arranca completamente vacío sin datos de ejemplo en seed.json', async () => {
   const data = await new JsonRepository(new MemoryStorage()).load();
@@ -42,4 +43,15 @@ test('separa reparación, cobro y entrega y filtra modalidad y búsqueda', async
   expect(filterOrders(data, 'pedro', 'Domicilio').length).toBeGreaterThan(0);
   expect(filterOrders(data, 'pedro', 'Taller')).toHaveLength(0);
   expect(dashboard(data).active).toBe(data.orders.filter(o => o.repair !== 'Cerrado').length);
+});
+test('dashboard usa fecha local por defecto para cobrado hoy y descuenta de por cobrar', async () => {
+  const { repo } = createSeededRepository();
+  const before = await repo.load();
+  const target = before.orders.find(o => o.price !== null && o.price > o.paid)!;
+  const amount = target.price! - target.paid;
+  const next = await repo.registerPayment(target.id, { amount, date: todayIsoLocal() });
+  const prev = dashboard(before);
+  const curr = dashboard(next);
+  expect(curr.collected).toBe(prev.collected + amount);
+  expect(curr.pending).toBe(prev.pending - amount);
 });

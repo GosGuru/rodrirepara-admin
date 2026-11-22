@@ -8,6 +8,8 @@ import { useSaveFeedback } from '../hooks/useSaveFeedback';
 import { isValidIsoDate, todayIsoLocal } from '../utils/date';
 import '../views/new-repair.css';
 
+export const PERSONAL_EXPENSE_CATEGORY = 'Gasto personal';
+
 const EXPENSE_CATEGORIES: readonly SelectOption[] = [
   'Combustible',
   'Transporte',
@@ -175,6 +177,7 @@ export function ExpenseForm({
   onBusyChange?: (busy: boolean) => void;
 }) {
   const baseId = useId();
+  const [scope, setScope] = useState<'business' | 'personal'>('business');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Combustible');
   const [amount, setAmount] = useState('');
@@ -210,8 +213,9 @@ export function ExpenseForm({
     }
 
     setErrors({});
+    const resolvedCategory = scope === 'personal' ? PERSONAL_EXPENSE_CATEGORY : category;
     await save.run(
-      () => onSave({ description: trimmedDesc, category, amount: numericAmount, date }),
+      () => onSave({ description: trimmedDesc, category: resolvedCategory, amount: numericAmount, date }),
       () => onConfirmed?.(),
     );
   }
@@ -254,20 +258,50 @@ export function ExpenseForm({
         </div>
 
         <div className="field-group">
-          <span className="field-label" id={`${baseId}-cat-label`}>
-            Categoría
+          <span className="field-label" id={`${baseId}-scope-label`}>
+            Tipo de gasto
           </span>
-          <Select
-            id={`${baseId}-cat`}
-            name="category"
-            value={category}
-            options={EXPENSE_CATEGORIES}
-            icon={<Tag size={15} />}
-            disabled={save.busy}
-            ariaLabelledBy={`${baseId}-cat-label`}
-            onChange={setCategory}
-          />
+          <div className="segmented-control" role="group" aria-labelledby={`${baseId}-scope-label`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button
+              type="button"
+              className={scope === 'business' ? 'btn-primary' : 'btn-secondary'}
+              disabled={save.busy}
+              aria-pressed={scope === 'business'}
+              onClick={() => setScope('business')}
+            >
+              Empresa / Taller
+            </button>
+            <button
+              type="button"
+              className={scope === 'personal' ? 'btn-primary' : 'btn-secondary'}
+              disabled={save.busy}
+              aria-pressed={scope === 'personal'}
+              onClick={() => setScope('personal')}
+            >
+              Personal
+            </button>
+          </div>
         </div>
+
+        {scope === 'business' ? (
+          <div className="field-group">
+            <span className="field-label" id={`${baseId}-cat-label`}>
+              Categoría
+            </span>
+            <Select
+              id={`${baseId}-cat`}
+              name="category"
+              value={category}
+              options={EXPENSE_CATEGORIES}
+              icon={<Tag size={15} />}
+              disabled={save.busy}
+              ariaLabelledBy={`${baseId}-cat-label`}
+              onChange={setCategory}
+            />
+          </div>
+        ) : (
+          <p className="field-hint">Los gastos personales se muestran aparte y no restan de los movimientos netos del taller.</p>
+        )}
 
         <div className="field-row-2">
           <div className="field-group">
@@ -294,6 +328,7 @@ export function ExpenseForm({
                   setAmount(event.target.value);
                   if (errors.amount) setErrors((prev) => ({ ...prev, amount: undefined }));
                 }}
+                onWheel={(event) => event.currentTarget.blur()}
               />
             </div>
             {errors.amount && (

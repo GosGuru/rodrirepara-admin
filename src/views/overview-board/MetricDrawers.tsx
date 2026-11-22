@@ -17,6 +17,7 @@ import type { Data, Order } from '../../repository';
 import { repairColumns, type RepairColumn } from '../repair-board';
 import { SideSheet } from '../../components/SideSheet';
 import { StatusPill } from '../../components/StatusPill';
+import { todayIsoLocal } from '../../utils/date';
 import './panels.css';
 
 export type PanelMetric = 'active' | 'collected' | 'pending';
@@ -70,7 +71,7 @@ export function MetricDrawers({
     return map;
   }, [columns]);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = todayIsoLocal();
   const todayLabel = formatDayMonth(new Date());
 
   const todayPayments = useMemo(

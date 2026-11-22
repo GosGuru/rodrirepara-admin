@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { Order } from '../../repository';
+import { todayIsoLocal } from '../../utils/date';
 import { PaymentForm } from './PaymentForm';
 
 const order: Order = {
@@ -59,4 +60,9 @@ test('precio nuevo mayor rehabilita el cobro y no impone máximo flotante', () =
   expect(html).toContain('<dt>Saldo</dt><dd>$ 0,2</dd>');
   expect(html).not.toContain('disabled');
   expect(html).not.toContain('max=');
+});
+
+test('fecha inicial de cobro usa fecha local sin desplazamiento UTC', () => {
+  const html = render(order);
+  expect(html).toContain(`name="date" value="${todayIsoLocal()}"`);
 });

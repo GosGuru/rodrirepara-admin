@@ -470,6 +470,82 @@
   font-size: 12.5px;
   color: #848797;
 }
+.od-notes-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.od-notes-text {
+  margin: 0;
+  font-size: 12.5px;
+  color: #1e202c;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.od-notes-add-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3965ff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.od-notes-add-link:hover {
+  text-decoration: underline;
+}
+.od-notes-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.od-notes-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d9dce8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e202c;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  resize: vertical;
+}
+.od-notes-textarea:focus {
+  outline: none;
+  border-color: #3965ff;
+  box-shadow: 0 0 0 3px rgba(57, 101, 255, 0.12);
+}
+.od-notes-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.od-notes-save {
+  border: 0;
+  border-radius: 7px;
+  background: #161722;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.od-notes-save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.od-notes-cancel {
+  border: 1px solid #d9dce8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #5b5e6e;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
 
 /* Historial & Gastos lists */
 .od-kv-grid {

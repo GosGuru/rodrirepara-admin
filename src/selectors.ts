@@ -1,4 +1,5 @@
 import type { Data, Order } from './repository';
+import { todayIsoLocal } from './utils/date';
 
 export const money = (n: number) => '$ ' + n.toLocaleString('es-AR');
 export const paymentStatus = (order: Order) =>
@@ -14,7 +15,7 @@ export function filterOrders(data: Data, query: string, mode: string) {
   });
 }
 
-export function dashboard(data: Data, today = new Date().toISOString().slice(0, 10)) {
+export function dashboard(data: Data, today = todayIsoLocal()) {
   return {
     collected: data.payments.filter(p => p.date === today).reduce((sum, p) => sum + p.amount, 0),
     active: data.orders.filter(o => o.repair !== 'Cerrado').length,
