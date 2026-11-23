@@ -196,7 +196,7 @@ describe('syncDataToGoogleSheets', () => {
       valueInputOption: string;
       data: Array<{ range: string; values: unknown[][] }>;
     };
-    expect(payload.valueInputOption).toBe('USER_ENTERED');
+    expect(payload.valueInputOption).toBe('RAW');
     expect(payload.data[0].range).toBe('clients!A2:D2');
     expect(payload.data[0].values[0]).toEqual([
       'CLI-1',
@@ -204,8 +204,11 @@ describe('syncDataToGoogleSheets', () => {
       '099111222',
       '2026-11-22T22:00:00.000Z',
     ]);
+    // Ensure Uruguayan leading-zero phone stays a string and numeric price stays a number under RAW.
+    expect(typeof payload.data[0].values[0][2]).toBe('string');
     expect(payload.data[1].range).toBe('orders!A2:T2');
     expect(payload.data[1].values[0][11]).toBe(3000); // price is numeric
+    expect(typeof payload.data[1].values[0][11]).toBe('number');
     expect(payload.data[4].range).toBe('expenses!A2:F2');
     expect(payload.data[4].values[0]).toEqual([
       'EXP-1',

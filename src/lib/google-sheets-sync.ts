@@ -20,7 +20,6 @@ type TabSpec = {
   buildRows: (data: Data, existingCreatedAt: Map<string, string>, fallbackIso: string) => SheetRow[];
 };
 
-const MAX_READ_ROW = 1000;
 const SHEETS_API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
 
 function createdAtFor(
@@ -241,7 +240,7 @@ export async function syncDataToGoogleSheets(options: {
   const params = new URLSearchParams();
   params.set('valueRenderOption', 'UNFORMATTED_VALUE');
   for (const tab of SHEET_TABS) {
-    params.append('ranges', `${tab.name}!A2:${tab.lastCol}${MAX_READ_ROW}`);
+    params.append('ranges', `${tab.name}!A2:${tab.lastCol}`);
   }
 
   const readRes = await fetchImpl(
@@ -305,7 +304,8 @@ export async function syncDataToGoogleSheets(options: {
     };
   }
 
-  // 3. Apply value updates in one batchUpdate (USER_ENTERED preserves numeric types for SUM formulas).
+  // 3. Apply value updates in one batchUpdate (RAW keeps JSON numbers numeric for SUM formulas,
+  // preserves leading zeros in Uruguayan phones and YYYY-MM-DD dates, and prevents formula injection).
   if (updates.length > 0) {
     const updateRes = await fetchImpl(
       `${SHEETS_API_BASE}/${encodedId}/values:batchUpdate`,
@@ -313,7 +313,7 @@ export async function syncDataToGoogleSheets(options: {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          valueInputOption: 'USER_ENTERED',
+          valueInputOption: 'RAW',
           data: updates,
         }),
       },

@@ -13,9 +13,9 @@ Branch: `feat/google-sheets-drive-sync`. Risk: item 2 (OAuth token handling & le
 
 ## Tasks
 
-- [ ] **T1** (S1, S2, S3): Google config, OAuth token client, and idempotent 6-tab Sheets sync engine with unit tests — Route: inline — Commit: pending
-- [ ] **T2** (S5): Self-contained PDF generator and Google Drive multipart upload with unit tests — Route: inline — Commit: pending
-- [ ] **T3** (S1, S4, S5): `useGoogleSync` hook, accessible Header/SettingsDrawer controls, App mutation wiring, `.env`/`.env.local`/`.env.example` setup, and UI tests — Route: inline — Commit: pending
+- [x] **T1** (S1, S2, S3): Google config, OAuth token client, and idempotent 6-tab Sheets sync engine with unit tests — Route: inline — Commit: `b25a31a` + S3 RAW fix
+- [x] **T2** (S5): Self-contained PDF generator and Google Drive multipart upload with unit tests — Route: inline — Commit: `b25a31a`
+- [x] **T3** (S1, S4, S5): `useGoogleSync` hook, accessible Header/SettingsDrawer controls, App mutation wiring, `.env`/`.env.local`/`.env.example` setup, and UI tests — Route: inline — Commit: `e2cac73`
 
 ## Log
 
