@@ -28,6 +28,7 @@ import { NewRepairView } from "./views/NewRepairView";
 import { OrderSheetProvider } from "./components/OrderSheetProvider";
 import { SettingsDrawer } from "./components/settings/SettingsDrawer";
 import { createWorkshopActions } from "./components/workshop/actions";
+import { useGoogleSync } from "./hooks/useGoogleSync";
 import { readColors, saveColors, type StageColors } from "./views/kanban-color-settings";
 
 const viewSubtitles: Record<string, string> = {
@@ -159,10 +160,24 @@ export default function App({
     setView("Nueva reparación");
   }
 
-  const actions = useMemo(() => createWorkshopActions(repo, setData, text => {
+  const googleSync = useGoogleSync({
+    onNotice: (text) => {
+      setNotice(text);
+    },
+  });
+
+  const applyAndSync = (next: Data) => {
+    setData(next);
+    googleSync.syncAfterMutation(next);
+  };
+
+  const actions = useMemo(() => createWorkshopActions(repo, (next) => {
+    setData(next);
+    googleSync.syncAfterMutation(next);
+  }, text => {
     setNotice(text);
     if (text) requestAnimationFrame(() => { if (!document.activeElement || document.activeElement === document.body) noticeRef.current?.focus(); });
-  }), [repo]);
+  }), [repo, googleSync.syncAfterMutation]);
 
   useEffect(() => {
     let active = true;
@@ -237,6 +252,7 @@ export default function App({
             view={view}
             dashboardChrome={view === 'Resumen'}
             data={d}
+            googleSync={googleSync}
             onCreateRepair={openNewRepair}
             onCreateExpense={() => setDialog("gasto")}
             onQuickSearch={(q) => { setQuery(q); setView("Órdenes de trabajo"); }}
@@ -271,12 +287,12 @@ export default function App({
             onBack={() => setView(returnView)}
             onCreateClient={async (input) => {
               const result = await repo.addClientWithId(input);
-              setData(result.data);
+              applyAndSync(result.data);
               return result.clientId;
             }}
             onSaveRepair={async (input) => {
               const next = await repo.addOrder(input);
-              setData(next);
+              applyAndSync(next);
             }}
             onClientCreated={() => setNotice("Cliente creado correctamente.")}
             onRepairSaved={() => {
@@ -298,6 +314,8 @@ export default function App({
         colors={boardColors}
         userEmail={userEmail}
         onSignOut={onSignOut}
+        googleSync={googleSync}
+        data={d}
         onSaveColors={persistBoardColors}
         onColorsSaved={() => setNotice("Colores del tablero guardados.")}
         onOpenModule={(moduleView) => setView(moduleView)}
@@ -320,7 +338,7 @@ export default function App({
             onCancel={() => setDialog("")}
             onSave={async (input) => {
               const next = await repo.addClient(input);
-              setData(next);
+              applyAndSync(next);
             }}
             onConfirmed={() => {
               setDialog("");
@@ -343,7 +361,7 @@ export default function App({
             onCancel={() => setDialog("")}
             onSave={async (input) => {
               const next = await repo.addExpense(input);
-              setData(next);
+              applyAndSync(next);
             }}
             onConfirmed={() => {
               setDialog("");

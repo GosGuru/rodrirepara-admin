@@ -1,0 +1,284 @@
+.gsync-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.gsync-trigger {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #202231;
+  border: 1px solid #e4e4f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(24, 24, 48, 0.045);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.gsync-trigger:hover {
+  background: #f8f8fd;
+  border-color: #cfd1e2;
+  color: #12131b;
+}
+
+.gsync-trigger:focus-visible {
+  outline: 2px solid #4c6ef5;
+  outline-offset: 2px;
+}
+
+.gsync-trigger--connected {
+  border-color: #cde8d7;
+  background: #f6fcf8;
+  color: #165232;
+}
+
+.gsync-trigger--connected:hover {
+  background: #edf9f1;
+  border-color: #a7dbbc;
+  color: #0f3f25;
+}
+
+.gsync-trigger--warning {
+  border-color: #f3d2a2;
+  background: #fffaf0;
+  color: #8a4b08;
+}
+
+.gsync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #9ca3af;
+  flex: none;
+}
+
+.gsync-dot--on {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
+}
+
+.gsync-dot--warn {
+  background: #d97706;
+}
+
+.gsync-spin {
+  animation: gsync-rotate 900ms linear infinite;
+}
+
+@keyframes gsync-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gsync-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 312px;
+  max-width: calc(100vw - 24px);
+  background: #ffffff;
+  border: 1px solid #e4e4f0;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 14px 36px rgba(18, 20, 38, 0.14);
+  display: grid;
+  gap: 11px;
+  color: #1f2233;
+}
+
+.gsync-popover__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gsync-popover__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #141624;
+}
+
+.gsync-popover__sub {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #5b6075;
+}
+
+.gsync-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #f1f2f8;
+  color: #4f5469;
+}
+
+.gsync-badge--on {
+  background: #e7f7ed;
+  color: #166534;
+}
+
+.gsync-badge--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.gsync-status-line {
+  margin: 0;
+  font-size: 11.5px;
+  color: #3a4054;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gsync-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.gsync-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.gsync-btn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 140ms ease, border-color 140ms ease, opacity 140ms ease;
+}
+
+.gsync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gsync-btn--primary {
+  background: #181922;
+  color: #ffffff;
+}
+
+.gsync-btn--primary:hover:not(:disabled) {
+  background: #2b2d3c;
+}
+
+.gsync-btn--secondary {
+  background: #ffffff;
+  color: #202231;
+  border-color: #dcdde9;
+}
+
+.gsync-btn--secondary:hover:not(:disabled) {
+  background: #f6f7fb;
+  border-color: #c5c8dc;
+}
+
+.gsync-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #efeff6;
+  font-size: 11.5px;
+}
+
+.gsync-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #3652d9;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.gsync-link:hover {
+  text-decoration: underline;
+}
+
+.gsync-disconnect {
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  color: #6b7280;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gsync-disconnect:hover {
+  color: #b91c1c;
+}
+
+/* SettingsDrawer integration card */
+.cfg-google-card {
+  border: 1px solid #e6e7f2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafafe;
+  display: grid;
+  gap: 10px;
+}
+
+.cfg-google-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cfg-google-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.cfg-google-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #d7d9e8;
+  background: #ffffff;
+  font-size: 11.5px;
+  color: #1f2233;
+}
+
+.cfg-google-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}

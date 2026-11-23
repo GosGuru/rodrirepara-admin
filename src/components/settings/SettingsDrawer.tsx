@@ -5,12 +5,16 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  ExternalLink,
+  FileDown,
+  FileSpreadsheet,
   Layers,
   LogOut,
   MessagesSquare,
   Package,
   Palette,
   Receipt,
+  RefreshCw,
   RotateCcw,
   Settings,
   UserPlus,
@@ -18,6 +22,8 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import type { Data } from '../../repository';
+import type { GoogleSyncController } from '../../hooks/useGoogleSync';
 import { SideSheet } from '../SideSheet';
 import { SaveButton } from '../ui/SaveButton';
 import { useSaveFeedback } from '../../hooks/useSaveFeedback';
@@ -44,6 +50,8 @@ export type SettingsDrawerProps = {
   onClose: () => void;
   userEmail?: string;
   onSignOut?: () => Promise<void> | void;
+  googleSync?: GoogleSyncController;
+  data?: Data;
 };
 
 type PendingExitAction =
@@ -69,6 +77,8 @@ export function SettingsDrawer({
   onClose,
   userEmail,
   onSignOut,
+  googleSync,
+  data,
 }: SettingsDrawerProps) {
   const [draftColors, setDraftColors] = useState<StageColors>(colors);
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
@@ -225,6 +235,8 @@ export function SettingsDrawer({
         busy={save.busy}
         saveError={save.error}
         stageRefs={stageRefs}
+        googleSync={googleSync}
+        data={data}
         onOpenModule={(moduleView) => requestExit({ type: 'module', view: moduleView })}
         onQuickAction={(action) => requestExit({ type: 'action', action })}
         onStageToggle={handleStageToggle}
@@ -288,6 +300,8 @@ export function SettingsDrawerBody({
   busy = false,
   saveError = '',
   stageRefs,
+  googleSync,
+  data,
   onOpenModule,
   onQuickAction,
   onStageToggle,
@@ -300,11 +314,29 @@ export function SettingsDrawerBody({
   busy?: boolean;
   saveError?: string;
   stageRefs?: React.MutableRefObject<Record<Stage, HTMLButtonElement | null>>;
+  googleSync?: GoogleSyncController;
+  data?: Data;
   onOpenModule: (moduleView: 'Consultas' | 'Repuestos') => void;
   onQuickAction: (action: 'client' | 'expense' | 'repair') => void;
   onStageToggle: (stage: Stage) => void;
   onResetDefaults: () => void;
 }) {
+  const [sheetInput, setSheetInput] = useState(googleSync?.spreadsheetId ?? '');
+  const [sheetFeedback, setSheetFeedback] = useState('');
+
+  useEffect(() => {
+    setSheetInput(googleSync?.spreadsheetId ?? '');
+  }, [googleSync?.spreadsheetId]);
+
+  function handleSaveSheetId() {
+    if (!googleSync) return;
+    if (googleSync.updateSpreadsheetId(sheetInput)) {
+      setSheetFeedback('URL/ID del Google Sheet guardado.');
+    } else {
+      setSheetFeedback('Pegá una URL o ID válido de Google Sheets.');
+    }
+  }
+
   return (
     <div className="cfg-body">
       {/* 1. Módulos del sistema */}
@@ -429,6 +461,120 @@ export function SettingsDrawerBody({
           </button>
         </div>
       </section>
+
+      {/* 2b. Respaldo en Google Sheets y Drive */}
+      {googleSync && (
+        <section className="cfg-section" aria-labelledby="cfg-sec-google">
+          <div className="cfg-section__head">
+            <span className="cfg-section__icon" aria-hidden="true">
+              <FileSpreadsheet size={16} strokeWidth={2} />
+            </span>
+            <div>
+              <h3 id="cfg-sec-google">Google Sheets y Drive</h3>
+              <p>Sincronizá manualmente y reflejá cada guardado en tu planilla y PDFs.</p>
+            </div>
+          </div>
+
+          <div className="cfg-google-card">
+            <div className="cfg-google-row">
+              <span
+                className={`gsync-badge ${
+                  googleSync.connected
+                    ? 'gsync-badge--on'
+                    : googleSync.status === 'expired' || googleSync.status === 'error'
+                      ? 'gsync-badge--warn'
+                      : ''
+                }`}
+              >
+                {googleSync.connected
+                  ? 'Google conectado'
+                  : googleSync.status === 'expired'
+                    ? 'Sesión vencida'
+                    : 'Desconectado'}
+              </span>
+              {googleSync.spreadsheetUrl && (
+                <a
+                  href={googleSync.spreadsheetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gsync-link"
+                >
+                  <span>Abrir Sheet</span>
+                  <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              )}
+            </div>
+
+            <div className="cfg-google-input-row">
+              <input
+                type="text"
+                className="cfg-google-input"
+                aria-label="URL o ID del Google Sheet"
+                placeholder="Pegá la URL o ID del Google Sheet"
+                value={sheetInput}
+                onChange={(e) => {
+                  setSheetInput(e.target.value);
+                  setSheetFeedback('');
+                }}
+              />
+              <button
+                type="button"
+                className="gsync-btn gsync-btn--secondary"
+                disabled={busy || googleSync.busy}
+                onClick={handleSaveSheetId}
+              >
+                Guardar
+              </button>
+            </div>
+
+            {sheetFeedback && (
+              <p className="gsync-status-line" role="status">
+                {sheetFeedback}
+              </p>
+            )}
+            {googleSync.statusMessage && (
+              <p className="gsync-status-line" role="status">
+                <CheckCircle2 size={13} aria-hidden="true" />
+                <span>{googleSync.statusMessage}</span>
+              </p>
+            )}
+            {googleSync.errorMessage && (
+              <p className="gsync-error" role="alert">
+                {googleSync.errorMessage}
+              </p>
+            )}
+
+            <div className="cfg-google-btns">
+              <button
+                type="button"
+                className="gsync-btn gsync-btn--primary"
+                disabled={busy || googleSync.busy || !data || !googleSync.configured}
+                onClick={() => {
+                  if (data) void googleSync.syncNow(data);
+                }}
+              >
+                <RefreshCw
+                  size={13.5}
+                  className={googleSync.status === 'syncing' ? 'gsync-spin' : undefined}
+                  aria-hidden="true"
+                />
+                <span>{googleSync.connected ? 'Sincronizar' : 'Conectar y sincronizar'}</span>
+              </button>
+              <button
+                type="button"
+                className="gsync-btn gsync-btn--secondary"
+                disabled={busy || googleSync.busy || !data || !googleSync.configured}
+                onClick={() => {
+                  if (data) void googleSync.exportPdfToDrive(data);
+                }}
+              >
+                <FileDown size={13.5} aria-hidden="true" />
+                <span>PDF a Drive</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 3. Colores del tablero */}
       <section className="cfg-section cfg-section--last" aria-labelledby="cfg-sec-colors">

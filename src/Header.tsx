@@ -1,8 +1,10 @@
 import { Plus, Receipt } from "lucide-react";
 import type { Data } from "./repository";
+import type { GoogleSyncController } from "./hooks/useGoogleSync";
 import { useOrderSheet } from "./components/OrderSheetProvider";
 import { CommandSearch } from "./components/CommandSearch";
 import { NotificationsPopover } from "./components/NotificationsPopover";
+import { GoogleSyncControl } from "./components/GoogleSyncControl";
 
 function formatSpanishDate(date: Date): string {
   const raw = new Intl.DateTimeFormat("es-UY", {
@@ -23,6 +25,7 @@ export function Header({
   onCreateExpense,
   onQuickSearch,
   onOpenClients,
+  googleSync,
 }: {
   view: string;
   title?: string;
@@ -35,6 +38,7 @@ export function Header({
   onOpenNotifications?: () => void;
   onQuickSearch?: (query: string) => void;
   onOpenClients?: () => void;
+  googleSync?: GoogleSyncController;
 }) {
   const orderSheet = useOrderSheet();
 
@@ -59,6 +63,7 @@ export function Header({
             data={data}
             onSelectOrder={(order, trigger) => orderSheet?.show(order, trigger)}
           />
+          {googleSync && <GoogleSyncControl sync={googleSync} data={data} />}
           {onCreateExpense && (
             <button
               type="button"
@@ -95,6 +100,11 @@ export function Header({
               : "Seguimiento operativo de Rodrigo Repara.")}
         </p>
       </div>
+      {googleSync && (
+        <div className="top-actions">
+          <GoogleSyncControl sync={googleSync} data={data} />
+        </div>
+      )}
     </header>
   );
 }
