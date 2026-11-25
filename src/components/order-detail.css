@@ -546,6 +546,76 @@
   padding: 6px 10px;
   cursor: pointer;
 }
+.od-warranty-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #ccfbf1;
+  border: 1px solid #99f6e4;
+  color: #115e59;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+.od-notes-type {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.od-notes-type__label {
+  font-size: 11px;
+  font-weight: 650;
+  color: #5b5e6e;
+}
+.od-notes-type__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.od-notes-type__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid #d9dce8;
+  background: #ffffff;
+  color: #4b4e5e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.od-notes-type__pill:hover:not(:disabled) {
+  border-color: #b8bdd0;
+}
+.od-notes-type__pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.od-notes-type__pill.is-active {
+  border-color: #3965ff;
+  background: #eef2ff;
+  color: #274bdb;
+}
+.od-notes-type__pill--warranty.is-active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+.od-notes-hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #6b6e7f;
+}
+.od-notes-hint--warranty {
+  color: #0f766e;
+  font-weight: 500;
+}
 
 /* Historial & Gastos lists */
 .od-kv-grid {

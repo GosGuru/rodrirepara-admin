@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   MapPin,
   MonitorSmartphone,
   Phone,
+  ShieldCheck,
   Store,
   User,
   UserPlus,
@@ -19,6 +20,7 @@ import { DatePicker } from '../components/ui/DatePicker';
 import { SaveButton } from '../components/ui/SaveButton';
 import { useSaveFeedback } from '../hooks/useSaveFeedback';
 import { isValidIsoDate, todayIsoLocal } from '../utils/date';
+import { formatOrderNotes } from '../utils/warranty';
 import './new-repair.css';
 
 type Step = 'repair' | 'client';
@@ -30,6 +32,8 @@ type RepairDraft = {
   entry: string;
   address: string;
   fault: string;
+  isWarranty: boolean;
+  originalId: string;
 };
 
 type RepairErrors = Partial<Record<'clientId' | 'equipment' | 'entry' | 'address' | 'fault', string>>;
@@ -42,6 +46,7 @@ const MODE_OPTIONS: readonly SelectOption[] = [
 
 export type NewRepairViewProps = {
   clients: readonly Client[];
+  orders?: readonly Order[];
   initialStep?: Step;
   onBack: () => void;
   onCreateClient: (input: Omit<Client, 'id'>) => Promise<string>;
@@ -52,6 +57,7 @@ export type NewRepairViewProps = {
 
 export function NewRepairView({
   clients,
+  orders = [],
   initialStep = 'repair',
   onBack,
   onCreateClient,
@@ -70,6 +76,8 @@ export function NewRepairView({
     entry: todayIsoLocal(),
     address: '',
     fault: '',
+    isWarranty: false,
+    originalId: '',
   }));
   const [dateInputValid, setDateInputValid] = useState(true);
   const [repairErrors, setRepairErrors] = useState<RepairErrors>({});
@@ -81,6 +89,22 @@ export function NewRepairView({
 
   const repairSave = useSaveFeedback({ successHoldMs: 820 });
   const clientSave = useSaveFeedback({ successHoldMs: 760 });
+
+  const clientOrders = useMemo(
+    () => (draft.clientId ? orders.filter((o) => o.clientId === draft.clientId) : []),
+    [orders, draft.clientId],
+  );
+
+  const originalOrderOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: 'Sin vincular (garantía directa)' },
+      ...clientOrders.map((o) => ({
+        value: o.id,
+        label: `${o.id} · ${o.equipment}`,
+      })),
+    ],
+    [clientOrders],
+  );
 
   // Focus refs
   const clientComboRef = useRef<HTMLInputElement>(null);
@@ -166,19 +190,22 @@ export function NewRepairView({
       mode: draft.mode,
       address: draft.address.trim(),
       fault: draft.fault.trim(),
-      diagnosis: '',
+      diagnosis: draft.isWarranty ? formatOrderNotes(true, '') : '',
       parts: '',
       partsCost: 0,
       labor: 0,
       quote: 0,
-      price: null,
+      price: draft.isWarranty ? 0 : null,
       paid: 0,
       repair: 'Visita o recepción',
       delivery: 'Pendiente',
       entry: draft.entry,
       finish: '',
       owner: 'Rodrigo',
-      originalId: '',
+      originalId:
+        draft.isWarranty && clientOrders.some((o) => o.id === draft.originalId)
+          ? draft.originalId
+          : '',
     };
 
     await repairSave.run(
@@ -272,7 +299,11 @@ export function NewRepairView({
                   inputRef={clientComboRef}
                   addButtonRef={addClientBtnRef}
                   onChange={(nextId) => {
-                    setDraft((prev) => ({ ...prev, clientId: nextId }));
+                    setDraft((prev) => ({
+                      ...prev,
+                      clientId: nextId,
+                      originalId: prev.clientId === nextId ? prev.originalId : '',
+                    }));
                     if (nextId) clearRepairFieldError('clientId');
                   }}
                   onAddClient={openClientStep}
@@ -319,6 +350,84 @@ export function NewRepairView({
                     <AlertCircle size={14} aria-hidden="true" />
                     <span>{repairErrors.equipment}</span>
                   </p>
+                )}
+              </div>
+
+              {/* Tipo de gestión */}
+              <div className="field-group">
+                <span className="field-label" id={`${baseId}-management-label`}>
+                  Tipo de gestión
+                </span>
+                <div
+                  className="management-type-group"
+                  role="radiogroup"
+                  aria-labelledby={`${baseId}-management-label`}
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={!draft.isWarranty}
+                    disabled={repairSave.busy}
+                    className={`management-type-card${!draft.isWarranty ? ' is-selected' : ''}`}
+                    onClick={() =>
+                      setDraft((prev) => ({ ...prev, isWarranty: false, originalId: '' }))
+                    }
+                  >
+                    <span className="management-type-card__icon" aria-hidden="true">
+                      <Wrench size={16} />
+                    </span>
+                    <span className="management-type-card__copy">
+                      <strong>Reparación estándar</strong>
+                      <small>Presupuesto y cobro habitual</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={draft.isWarranty}
+                    disabled={repairSave.busy}
+                    className={`management-type-card management-type-card--warranty${draft.isWarranty ? ' is-selected' : ''}`}
+                    onClick={() =>
+                      setDraft((prev) => ({ ...prev, isWarranty: true }))
+                    }
+                  >
+                    <span className="management-type-card__icon" aria-hidden="true">
+                      <ShieldCheck size={16} />
+                    </span>
+                    <span className="management-type-card__copy">
+                      <strong>Reparación de garantía</strong>
+                      <small>Sin costo ($ 0)</small>
+                    </span>
+                  </button>
+                </div>
+
+                {draft.isWarranty && (
+                  <div className="warranty-callout" role="status">
+                    <ShieldCheck size={16} className="warranty-callout__icon" aria-hidden="true" />
+                    <div className="warranty-callout__body">
+                      <strong>Sin costo ($ 0)</strong>
+                      <p>Se registrará como reparación de garantía en las notas y con precio final $ 0.</p>
+                      {clientOrders.length > 0 && (
+                        <div className="warranty-callout__select">
+                          <span className="field-label" id={`${baseId}-original-label`}>
+                            Orden original (opcional)
+                          </span>
+                          <Select
+                            id={`${baseId}-original`}
+                            name="originalId"
+                            value={draft.originalId}
+                            options={originalOrderOptions}
+                            disabled={repairSave.busy}
+                            ariaLabelledBy={`${baseId}-original-label`}
+                            onChange={(nextOriginalId) =>
+                              setDraft((prev) => ({ ...prev, originalId: nextOriginalId }))
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 

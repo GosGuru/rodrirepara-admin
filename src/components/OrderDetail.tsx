@@ -8,13 +8,14 @@ import {
   MapPin,
   Pencil,
   Phone,
+  ShieldCheck,
   Tag,
   UserRound,
   Wallet,
   Wrench,
   X,
 } from "lucide-react";
-import type { Data, Order } from "../repository";
+import type { Data, Order, OrderUpdate } from "../repository";
 import type { WorkshopActions } from "./workshop/actions";
 import type { OrderSheetInitialForm } from "./OrderSheetProvider";
 import { OrderEditor } from "./workshop/OrderEditor";
@@ -24,6 +25,7 @@ import { moveChoices } from "../views/repair-board";
 import { StatusPill } from "./StatusPill";
 import { SideSheet } from "./SideSheet";
 import { normalizeWhatsAppDigits } from "../views/overview-board/ContactDrawer";
+import { formatOrderNotes, parseOrderNotes } from "../utils/warranty";
 import "./order-detail.css";
 
 type DetailTab = "resumen" | "historial" | "gastos";
@@ -100,8 +102,10 @@ export function OrderDetail({
   const [tab, setTab] = useState<DetailTab>("resumen");
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const parsedNotes = parseOrderNotes(order.diagnosis);
   const [editingNote, setEditingNote] = useState(false);
-  const [noteDraft, setNoteDraft] = useState(order.diagnosis);
+  const [noteDraft, setNoteDraft] = useState(parsedNotes.noteText);
+  const [warrantyNoteDraft, setWarrantyNoteDraft] = useState(parsedNotes.isWarrantyManagement);
   const [quickError, setQuickError] = useState("");
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
@@ -114,11 +118,13 @@ export function OrderDetail({
   const noBalance = order.price !== null && order.paid >= order.price;
 
   useEffect(() => {
+    const nextParsed = parseOrderNotes(order.diagnosis);
     if (!sheetOpen) {
       setStatusMenuOpen(false);
       setContactOpen(false);
       setEditingNote(false);
-      setNoteDraft(order.diagnosis);
+      setNoteDraft(nextParsed.noteText);
+      setWarrantyNoteDraft(nextParsed.isWarrantyManagement);
       setQuickError("");
       return;
     }
@@ -126,7 +132,8 @@ export function OrderDetail({
     setStatusMenuOpen(false);
     setContactOpen(false);
     setEditingNote(false);
-    setNoteDraft(order.diagnosis);
+    setNoteDraft(nextParsed.noteText);
+    setWarrantyNoteDraft(nextParsed.isWarrantyManagement);
     setQuickError("");
     if (initialForm === "edit" && actions) {
       setForm("edit");
@@ -295,7 +302,11 @@ export function OrderDetail({
   // High-fidelity Drawer mode (Panel #5)
   const stepIdx = repairStepIndex(order.repair);
   const tone = statusTone(order.repair);
-  const hasNotes = Boolean(order.diagnosis?.trim() || (order.parts?.trim() && order.parts.trim() !== "Sin repuestos asignados" && order.parts.trim() !== "Sin repuestos"));
+  const hasNotes = Boolean(
+    parsedNotes.isWarrantyManagement ||
+      parsedNotes.noteText ||
+      (order.parts?.trim() && order.parts.trim() !== "Sin repuestos asignados" && order.parts.trim() !== "Sin repuestos"),
+  );
 
   const sheetHeader = (
     <div className="od-header">
@@ -621,7 +632,8 @@ export function OrderDetail({
                         title="Agregar o editar nota"
                         disabled={busy}
                         onClick={() => {
-                          setNoteDraft(order.diagnosis);
+                          setNoteDraft(parsedNotes.noteText);
+                          setWarrantyNoteDraft(parsedNotes.isWarrantyManagement);
                           setEditingNote(true);
                         }}
                       >
@@ -635,10 +647,59 @@ export function OrderDetail({
                         className="od-notes-editor"
                         onSubmit={async e => {
                           e.preventDefault();
-                          await quickUpdate({ diagnosis: noteDraft.trim() });
+                          const patch: OrderUpdate = {
+                            diagnosis: formatOrderNotes(warrantyNoteDraft, noteDraft),
+                          };
+                          if (warrantyNoteDraft && order.paid === 0 && order.price !== 0) {
+                            patch.price = 0;
+                          } else if (
+                            !warrantyNoteDraft &&
+                            parsedNotes.isWarrantyManagement &&
+                            order.price === 0 &&
+                            order.paid === 0
+                          ) {
+                            patch.price = null;
+                          }
+                          await quickUpdate(patch);
                           setEditingNote(false);
                         }}
                       >
+                        <div className="od-notes-type">
+                          <span className="od-notes-type__label">Tipo de gestión</span>
+                          <div className="od-notes-type__pills" role="radiogroup" aria-label="Tipo de gestión">
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={!warrantyNoteDraft}
+                              disabled={busy}
+                              className={`od-notes-type__pill${!warrantyNoteDraft ? " is-active" : ""}`}
+                              onClick={() => setWarrantyNoteDraft(false)}
+                            >
+                              Estándar
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={warrantyNoteDraft}
+                              disabled={busy || (order.paid > 0 && !parsedNotes.isWarrantyManagement)}
+                              className={`od-notes-type__pill od-notes-type__pill--warranty${warrantyNoteDraft ? " is-active" : ""}`}
+                              onClick={() => setWarrantyNoteDraft(true)}
+                            >
+                              <ShieldCheck size={13} strokeWidth={2} aria-hidden="true" />
+                              <span>Garantía (sin costo)</span>
+                            </button>
+                          </div>
+                          {order.paid > 0 && !parsedNotes.isWarrantyManagement && (
+                            <p className="od-notes-hint">
+                              Ya tiene cobros registrados; no se puede pasar a sin costo.
+                            </p>
+                          )}
+                          {warrantyNoteDraft && order.paid === 0 && (
+                            <p className="od-notes-hint od-notes-hint--warranty">
+                              Al guardar, el precio final quedará en $ 0 (sin costo).
+                            </p>
+                          )}
+                        </div>
                         <textarea
                           className="od-notes-textarea"
                           aria-label="Nota libre"
@@ -658,7 +719,8 @@ export function OrderDetail({
                             className="od-notes-cancel"
                             disabled={busy}
                             onClick={() => {
-                              setNoteDraft(order.diagnosis);
+                              setNoteDraft(parsedNotes.noteText);
+                              setWarrantyNoteDraft(parsedNotes.isWarrantyManagement);
                               setEditingNote(false);
                             }}
                           >
@@ -668,8 +730,14 @@ export function OrderDetail({
                       </form>
                     ) : hasNotes ? (
                       <div className="od-notes-content">
-                        {order.diagnosis.trim() && (
-                          <p className="od-notes-text">{order.diagnosis.trim()}</p>
+                        {parsedNotes.isWarrantyManagement && (
+                          <div className="od-warranty-pill">
+                            <ShieldCheck size={13} strokeWidth={2.1} aria-hidden="true" />
+                            <span>Reparación de garantía · Sin costo</span>
+                          </div>
+                        )}
+                        {parsedNotes.noteText && (
+                          <p className="od-notes-text">{parsedNotes.noteText}</p>
                         )}
                         {order.parts.trim() && order.parts.trim() !== "Sin repuestos asignados" && order.parts.trim() !== "Sin repuestos" && (
                           <dl className="od-notes-dl">
@@ -690,6 +758,7 @@ export function OrderDetail({
                             disabled={busy}
                             onClick={() => {
                               setNoteDraft("");
+                              setWarrantyNoteDraft(false);
                               setEditingNote(true);
                             }}
                           >

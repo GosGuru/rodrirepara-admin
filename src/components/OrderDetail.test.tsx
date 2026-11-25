@@ -74,3 +74,18 @@ test("precio final cero no se presenta como sin definir", () => {
   expect(html).not.toContain("Sin definir");
   expect(html).toContain("<dt>Precio final</dt><dd>$ 0</dd>");
 });
+
+test("notas con reparación de garantía sin costo conservan diagnóstico y precio $ 0 en detalle", () => {
+  const warrantyOrder: Order = {
+    ...original,
+    id: "O-3",
+    price: 0,
+    diagnosis: "Tipo de gestión: Reparación de garantía (sin costo)\nCambio de placa cubierto",
+  };
+  const html = renderToStaticMarkup(
+    <OrderDetail order={warrantyOrder} data={{ ...data, orders: [original, warrantyOrder] }} open={() => {}} />,
+  );
+  expect(html).toContain("Tipo de gestión: Reparación de garantía (sin costo)");
+  expect(html).toContain("Cambio de placa cubierto");
+  expect(html).toContain("<dt>Precio final</dt><dd>$ 0</dd>");
+});

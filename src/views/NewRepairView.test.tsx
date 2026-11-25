@@ -25,6 +25,10 @@ describe('NewRepairView', () => {
     expect(html).toContain('Cliente');
     expect(html).toContain('Agregar cliente');
     expect(html).toContain('Equipo y modelo');
+    expect(html).toContain('Tipo de gestión');
+    expect(html).toContain('Reparación estándar');
+    expect(html).toContain('Reparación de garantía');
+    expect(html).toContain('Sin costo ($ 0)');
     expect(html).toContain('Modalidad');
     expect(html).toContain('Fecha de ingreso');
     expect(html).toContain('Dirección o recepción');

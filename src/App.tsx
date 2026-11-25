@@ -284,6 +284,7 @@ export default function App({
         {isNewRepair && (
           <NewRepairView
             clients={d.clients}
+            orders={d.orders}
             onBack={() => setView(returnView)}
             onCreateClient={async (input) => {
               const result = await repo.addClientWithId(input);
